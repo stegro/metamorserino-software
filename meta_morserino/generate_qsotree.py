@@ -127,106 +127,102 @@ if(__name__ == "__main__"):
         #contest, sota, or regular or...?
         alt(
             #regular qso
-        seq(cq, cq, de, call1, call1, alt(seq(pse, k,),ar ),
-        pause,
-        # cq cq
-        seq(call1, de, call2, call2,
-        prob(0.1, seq(pse, alt(170,155,156,158))),# qsy qro qrp qrs
-            alt(seq(pse, k), esc('KN_IDX'))),
-        pause,
-        #
-        alt(
-            #####english qso
             seq(
-            ### 1st durchgang
-            seq(
-                alt(r,218), # r v
-                alt(68, 71, 72, 74,# ga gd ge gm
-                    alt(68,74, 79),#german: ga, gm, gt
-                ),
-                dr,
-                op,
-                es, prob(0.5,alt(224,121,)), alt(203, 204,), fer,
-                # es (vy,mni) (tks,tnx) (fer,fr)
-                alt(18, 37),
-                # ans call
-                stop,
-                mix(
-                    seq(prob(0.5,seq(ur, prob(0.2,188))), 183,
-                        # ur sigs rst
-                        esc("RST_MAGIC"), repeat,
-                        alt(60, 210,
-                            # fb ufb
-                            seq(
-                                alt(153, 154, 164, 179, 26),repeat,#qrm qrn qsb rfi bci
-                                prob(0.2,seq(40,224,28,))#conds vy bd
-                            )),stop,
+                seq(cq, cq, de, call1, call1, alt(seq(pse, k,),ar )),# cq cq
+                pause,
+                seq(call1, de, call2, call2,
+                    prob(0.1, seq(pse, alt(170,155,156,158))),# qsy qro qrp qrs
+                    alt(seq(pse, k), esc('KN_IDX'))),
+                pause,
+                ### 1st durchgang
+                seq(
+                    alt(r,218), # r v
+                    alt(68, 71, 72, 74,# ga gd ge gm
+                        alt(68,74, 79),#german: ga, gm, gt
                     ),
-                    # prob(0.1,seq(prob(0.2,seq(call1, 91, 81, 39, 195,stop)) #is ham cl stn
-                    #              ,137, group5, repeat, stop, #op
-                    #              prob(0.5, seq(149, group5, repeat, stop)))), #qra
-                    seq(my,238,_is, group5, repeat,stop,),
-                    # my name is
-                    seq(my,172,_is, prob(0.3, 132), esc("NAME1_MAGIC"), esc("NAME1_MAGIC"),
-                        prob(0.1, seq(prob(0.5,195), 137, group5)),#op
-                        prob(0.1,seq(149, group5, group5, 195))#qra stn
-                        ,stop,),
-                    # my qth is nr
-                    seq(my,239,_is,esc("DOK_MAGIC"),repeat,stop,),
-                    # my dok is
-                    # prob(0.1, seq(alt(40,41),r,80,stop)),#conds condx r gud
-                ),
-                nw,90,ar,
-                # nw hw?
-                call2, de, call1,
-                pse, k,
-            ),
-            pause,
-            ### 2. durchgang
-            seq(call1, de, call2, stop,
-                alt(r, 60, esc("VE_IDX"), # r fb <ve>
-                    seq(prob(0.5, 12), 135) #all ok
-                ),
-                dr, op, es,
-                prob(0.5,alt(224,121,)), alt(203, 204,), fer,
-                # vy mni tks tnx fr fer
-                alt(182,182,95,123),stop,#rpt rprt info msg
-                mix(
-                    seq(alt(seq(prob(0.5,seq(ur, prob(0.2,188))), 183,),
-                            ur),
-                        # ur sigs rst
-                    esc("RST_MAGIC"), repeat,
-                        alt(60, 210, # fb ufb
-                            seq(prob(0.1, 89),#hvy
-                                alt(153, 154, 164,))),#qrm qrn qsb
-                        stop,
+                    dr,
+                    op,
+                    es, prob(0.5,alt(224,121,)), alt(203, 204,), fer,
+                    # es (vy,mni) (tks,tnx) (fer,fr)
+                    alt(18, 37),
+                    # ans call
+                    stop,
+                    mix(
+                        seq(prob(0.5,seq(ur, prob(0.2,188))), 183,
+                            # ur sigs rst
+                            esc("RST_MAGIC"), repeat,
+                            alt(60, 210,
+                                # fb ufb
+                                seq(
+                                    alt(153, 154, 164, 179, 26),repeat,#qrm qrn qsb rfi bci
+                                    prob(0.2,seq(40,224,28,))#conds vy bd
+                                )),stop,
+                        ),
+                        # prob(0.1,seq(prob(0.2,seq(call1, 91, 81, 39, 195,stop)) #is ham cl stn
+                        #              ,137, group5, repeat, stop, #op
+                        #              prob(0.5, seq(149, group5, repeat, stop)))), #qra
+                        seq(my,238,_is, group5, repeat,stop,),
+                        # my name is
+                        seq(my,172,_is, prob(0.3, 132), esc("NAME1_MAGIC"), esc("NAME1_MAGIC"),
+                            prob(0.1, seq(prob(0.5,195), 137, group5)),#op
+                            prob(0.1,seq(149, group5, group5, 195))#qra stn
+                            ,stop,),
+                        # my qth is nr
+                        seq(my,239,_is,esc("DOK_MAGIC"),repeat,stop,),
+                        # my dok is
+                        # prob(0.1, seq(alt(40,41),r,80,stop)),#conds condx r gud
                     ),
-                    seq(my,238,_is,group5,repeat,stop,),
-                    # my name is
-                    seq(my,172,_is,esc("NAME2_MAGIC"),esc("NAME2_MAGIC"),stop,),
-                    # my qth is
-                    seq(my,239,_is,esc("DOK_MAGIC"),repeat,stop,),
-                    # my dok is
-                    prob(0.10,seq(esc("AS_IDX"), pause, pause,)),
-                    # make <as> a second break
+                    nw,90,ar,
+                    # nw hw?
+                    call2, de, call1,
+                    pse, k,
                 ),
-                mix(
-                    seq(hr, alt(
-                        seq(alt(180,205,235),group5),#(rig trx xcvr)
-                        seq(185, group5, 208, group5)),#rx tx
-                        prob(0.1, seq(227,34)), # wid bug
-                        prob(0.9,seq(
-                            alt(227,es,stop), 147,#pwr
-                            abt, alt(seq(esc("NUM3_MAGIC"),alt(225, 226)),#w,wtts
-                                     seq(esc("NUM1_MAGIC"), 102),#kw
-                            ),
-                            prob(0.5,143), #pep
-                        alt(147,es,stop),19,group5,stop #ant
-                        ))),
-                    seq(233,hr,alt(seq(group5, group5), 49, 30, 111), #wx sunny cldy rain
-                        200, esc("NUM2_MAGIC"), c, stop, #temp
+                pause,
+                ### 2. durchgang
+                seq(call1, de, call2, stop,
+                    alt(r, 60, esc("VE_IDX"), # r fb <ve>
+                        seq(prob(0.5, 12), 135) #all ok
                     ),
-                ),
+                    dr, op, es,
+                    prob(0.5,alt(224,121,)), alt(203, 204,), fer,
+                    # vy mni tks tnx fr fer
+                    alt(182,182,95,123),stop,#rpt rprt info msg
+                    mix(
+                        seq(alt(seq(prob(0.5,seq(ur, prob(0.2,188))), 183,),
+                                ur),
+                            # ur sigs rst
+                            esc("RST_MAGIC"), repeat,
+                            alt(60, 210, # fb ufb
+                                seq(prob(0.1, 89),#hvy
+                                    alt(153, 154, 164,))),#qrm qrn qsb
+                            stop,
+                        ),
+                        seq(my,238,_is,group5,repeat,stop,),
+                        # my name is
+                        seq(my,172,_is,esc("NAME2_MAGIC"),esc("NAME2_MAGIC"),stop,),
+                        # my qth is
+                        seq(my,239,_is,esc("DOK_MAGIC"),repeat,stop,),
+                        # my dok is
+                        prob(0.10,seq(esc("AS_IDX"), pause, pause,)),
+                        # make <as> a second break
+                    ),
+                    mix(
+                        seq(hr, alt(
+                            seq(alt(180,205,235),group5),#(rig trx xcvr)
+                            seq(185, group5, 208, group5)),#rx tx
+                            prob(0.1, seq(227,34)), # wid bug
+                            prob(0.9,seq(
+                                alt(227,es,stop), 147,#pwr
+                                abt, alt(seq(esc("NUM3_MAGIC"),alt(225, 226)),#w,wtts
+                                         seq(esc("NUM1_MAGIC"), 102),#kw
+                                ),
+                                prob(0.5,143), #pep
+                                alt(147,es,stop),19,group5,stop #ant
+                            ))),
+                        seq(233,hr,alt(seq(group5, group5), 49, 30, 111), #wx sunny cldy rain
+                            200, esc("NUM2_MAGIC"), c, stop, #temp
+                        ),
+                    ),
                     84, 135, 231, ar, #hpe ok ?
                     call1, de, call2, pse, k,
                 ),
@@ -298,7 +294,6 @@ if(__name__ == "__main__"):
                         es, alt(seq(73, 73),# es gl gl
                                 69, 75),#gb gn
                     esc("SK_IDX"),
-                    call1, de, call2,pse, k
                 ),
                 pause,
                 ### 4. durchgang
@@ -336,17 +331,14 @@ if(__name__ == "__main__"):
                             23, 24), # awdh awds
                     prob(0.3, seq(93, 47)),# in cw
                     stop,
-                    call1, de, call2, esc("SK_IDX"),
-                    prob(0.2, alt(159,55,39)), #qrt ee cl
+                    call1, de, call2,
+                    alt(seq(esc("SK_IDX"),
+                            pause,seq(206,4), prob(0.5, alt(55,39)), pause,), #tu 73 ee cl
+                        seq(alt(55,39)), #ee cl
+                        seq(pse, k,pause,
+                            206,4,55, pause), #tu 73 ee
+                    ),
                 ),
-                #pause,
-                ###end
-                # seq(206,4), pause, #tu 73
-                # #
-                # seq(206,55), pause, #tu 73
-            ),
-
-            ),
             ),
             ###### SOTA qso
             seq(

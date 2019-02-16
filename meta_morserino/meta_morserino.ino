@@ -3345,8 +3345,8 @@ void evalQSOElem(int16_t iqso) {
   if(isEscSpecial(currentlist_start_byte)){
     switch(iqso_byte){
     case PAUSE_MAGIC:
-      // actually make a little break, just for fun.
-      length = random(4,min(8,MAX_SIG_WORD_LENGTH-3));
+      // a little bit of silence.
+      length = random(2,5);
       for(i = 0; i < length; i++)
         current_sig_word[i] = BLANK_IDX;
 #ifdef SIMULATE_MISTAKES
