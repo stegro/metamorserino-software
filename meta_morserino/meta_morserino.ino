@@ -19,6 +19,12 @@ const byte MorserSignature = '.';
 #define SIMULATE_MISTAKES
 #endif
 
+#define ENABLE_AUTO_KEYER
+
+#ifdef ENABLE_AUTO_KEYER
+//The macro E2END is the last EEPROM address.
+#define MAX_AUTO_TEXT_LENGTH (E2END-sizeof(byte)-sizeof(CWs)-2)
+#endif
 
 #define ENABLE_QSOTEXT_GENERATOR
 
@@ -241,7 +247,11 @@ int16_t scrollPosition = 0;
 /// the states the morserino can be in - top level menu
 enum __attribute__ ((__packed__)) morserinoMode {morseKeyer=0,
     morseTrainer, morseDecoder, morseCopyGame,
-    morseQuickEcho, morseBacklight,
+    morseQuickEcho,
+#ifdef ENABLE_AUTO_KEYER
+    morseSetAutoKeyerText,
+#endif
+    morseBacklight,
     numMorserinoModes};
 morserinoMode morseState = morseKeyer;
 
@@ -1360,7 +1370,11 @@ QSOTEXT,
 #ifdef ENABLE_TEST_GENERATOR
                 , TEST_ALL_SIGNS
 #endif
-              };
+#ifdef ENABLE_AUTO_KEYER
+    // this one is not available in the CW Trainer
+    , AUTO_KEYER_TEXT
+#endif
+    };
 
 /// variables for morse decoder
 ///////////////////////////////
@@ -1438,6 +1452,9 @@ boolean filteredState = false;
 boolean filteredStateBefore = false;
 
 int addressSignature, addressCWsettings;
+#ifdef ENABLE_AUTO_KEYER
+int addressAutoText;
+#endif
 
 void setup() {
 
@@ -1454,12 +1471,26 @@ void setup() {
   //   CWsettings struct CWs CWsettings (speed, polarity,  mode etc)
 
   // calculate addresses
+  EEPROM.setMemPool(0, E2END);
   addressSignature = EEPROM.getAddress(sizeof(byte));
   addressCWsettings = EEPROM.getAddress(sizeof(CWsettings));
+#ifdef ENABLE_AUTO_KEYER
+  addressAutoText = EEPROM.getAddress(MAX_AUTO_TEXT_LENGTH);
+#ifdef DEBUG
+  /* Serial.println(MAX_AUTO_TEXT_LENGTH); */
+  /* Serial.println(addressAutoText); */
+#endif
+#endif
   if (EEPROM.readByte(addressSignature) == MorserSignature) {
     // OK, we read in values from EEPROM
     EEPROM.readBlock(addressCWsettings, CWsettings);
+  }else{
     // otherwise we use the defaults defined in this program
+
+#ifdef ENABLE_AUTO_KEYER
+    // erase the Auto Keyer Text
+    EEPROM.updateByte(addressAutoText, NOT_IN_POOL_IDX);
+#endif
   }
   // first use of device with this version: use defaults, run i2c
   // scanner, write results into EEPROM
@@ -1923,7 +1954,19 @@ void reCalcSpeedSetting() {
 void loop() {
   checkPaddles();
   switch (morseState) {
+#ifdef ENABLE_AUTO_KEYER
+  case morseSetAutoKeyerText:
+    if (doPaddleIambic(leftKey, rightKey))
+      // we are busy keying and so need a very tight loop !
+      return;
+    break;
+#endif
   case morseKeyer:
+#ifdef ENABLE_AUTO_KEYER
+    if (generatorMode == AUTO_KEYER_TEXT) {
+      generateCW();
+    } else
+#endif
     if (doPaddleIambic(leftKey, rightKey))
       // we are busy keying and so need a very tight loop !
       return;
@@ -2193,7 +2236,23 @@ void loop() {
         showMarks = !showMarks;
         showCopyGameResult(resultSnippetLength);
       }
-    } else {
+    }
+#ifdef ENABLE_AUTO_KEYER
+    else if(morseState == morseKeyer){
+      if(generatorMode == AUTO_KEYER_TEXT){
+        generatorMode = GROUPOF5;
+        generatorState = KEY_UP;
+        vol.noTone();
+      }else {
+        // key the auto-text from the EEPROM
+        generatorMode = AUTO_KEYER_TEXT;
+        active = true;
+        startCW();
+        prepNewGeneratorRun(false);
+      }
+    }
+#endif
+    else {
       encoderState = (encoderMode)((encoderState + numEncoderModes - 1) % numEncoderModes);
       displayEncoderMode(true);
       enterOwnSigsForGenerator();
@@ -2211,6 +2270,10 @@ void loop() {
       displayEncoderMode(true);
       enterOwnSigsForGenerator();
     } else {
+#ifdef ENABLE_AUTO_KEYER
+      if(generatorMode == AUTO_KEYER_TEXT)
+        generatorMode = GROUPOF5;
+#endif
       topMenu();
       return;
     }
@@ -2241,13 +2304,21 @@ void loop() {
       clearCounters();
       break;
     case curtisSettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_AUTO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         setCurtisMode();
       else
         setFarnsworthMode();
       break;
     case polaritySettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_AUTO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         setPolarityMode();
       else
         setGeneratorMode();
@@ -2347,6 +2418,9 @@ void updateGeneratorMode() {
   else if (CWsettings.generatorMode == 13)
     generatorMode = TEST_ALL_SIGNS;
 #endif
+
+  // the AUTO_KEYER_TEXT generator is not available in the CW Trainer.
+
   else {
     generatorMode = KOCH;
     kochLevel = CWsettings.generatorMode - GENERATOR_MODE_KOCH_OFFSET;
@@ -2722,6 +2796,25 @@ void displayMorse() {
     // misuse the sig buffer from qso generator:
     qso_name2[signCounter] = CWtree[treeptr].sigidx;
   }
+#ifdef ENABLE_AUTO_KEYER
+  else if(morseState == morseSetAutoKeyerText) {
+    if(CWtree[treeptr].sigidx == NOT_IN_POOL_IDX || signCounter_inclBlanks == MAX_AUTO_TEXT_LENGTH-1){
+      EEPROM.updateByte(addressAutoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
+
+      fullScreenMsg(F("hv saved ur msg."));
+      // reset tree pointer
+      treeptr = CWTREE_ROOT;
+
+      // leave
+      topMenu();
+
+      // cannot display it in this case.
+      return;
+    }else
+      EEPROM.updateByte(addressAutoText + signCounter_inclBlanks, CWtree[treeptr].sigidx);
+
+  }
+#endif
 
   fillSigString(CWtree[treeptr].sigidx);
 
@@ -2864,8 +2957,16 @@ void displayTopLine() {
   // update display of CW speed
 
   displayCWspeed(CWsettings.wpm,
-                 morseState == morseKeyer || morseState == morseDecoder);
-  if (morseState == morseKeyer || morseState == morseDecoder) {
+                 morseState == morseKeyer ||
+#ifdef ENABLE_AUTO_KEYER
+                 morseState == morseSetAutoKeyerText ||
+#endif
+                 morseState == morseDecoder);
+  if (morseState == morseKeyer ||
+#ifdef ENABLE_AUTO_KEYER
+      morseState == morseSetAutoKeyerText ||
+#endif
+      morseState == morseDecoder) {
     displayCurtisMode(CWsettings.keyermode);              // and of Curtis mode
     displayPolarity();                                    // and paddle polarity
   } else {
@@ -2949,13 +3050,21 @@ void displayEncoderMode(boolean enteringMode) {
       displayCWspeed (CWsettings.wpm, true);
       break;
     case curtisSettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_AUTO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         displayCurtisMode(CWsettings.keyermode);
       else
         displayFarnsworthMode();
       break;
     case polaritySettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_AUTO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         displayPolarity();
       else
         displayGeneratorMode();
@@ -3121,6 +3230,11 @@ void fetchNextWord() {
 #ifdef ENABLE_TEST_GENERATOR
     case TEST_ALL_SIGNS:
       generateTestAllSigns();
+      break;
+#endif
+#ifdef ENABLE_AUTO_KEYER
+    case AUTO_KEYER_TEXT:
+      generateAutoKeyerText();
       break;
 #endif
     }
@@ -3343,6 +3457,21 @@ void generateOwnSigsGroupOf5() {
   }
 }
 
+#ifdef ENABLE_AUTO_KEYER
+void generateAutoKeyerText() {
+  int8_t i = -1;
+  do{
+    ++i;
+    current_sig_word[i] = EEPROM.readByte(addressAutoText + signCounter_inclBlanks + i+1);
+  }while(current_sig_word[i] != NOT_IN_POOL_IDX && i < MAX_SIG_WORD_LENGTH-1);
+  current_sig_word[i] = END_OF_WORD_IDX;
+  if(i == 0) {
+    // just something else than AUTO_KEYER_TEXT. This makes the
+    // morserino responsible for input again.
+    generatorMode = GROUPOF5;
+  }
+}
+#endif
 
 #ifdef ENABLE_QSOTEXT_GENERATOR
 void generateQSOText() {
@@ -3739,6 +3868,11 @@ void topMenu() {
         // a single click in top menu means enter a mode
 
         switch (morseState) {
+#ifdef ENABLE_AUTO_KEYER
+        case morseSetAutoKeyerText:
+          fullScreenMsg(F("end wid unknown"));
+#endif
+          clearCounters();
         case morseKeyer:    setupKeyerMode();
           break;
         case morseTrainer:  setupTrainerMode();
@@ -3809,6 +3943,11 @@ void printTopMenu(morserinoMode mode) {
     case morseQuickEcho:
       lcd.print(F("Quick Echo"));
       break;
+#ifdef ENABLE_AUTO_KEYER
+  case morseSetAutoKeyerText:
+      lcd.print(F("Auto Text"));
+      break;
+#endif
     case morseBacklight:
       lcd.print(F("Backlight "));
       lcd.print(CWsettings.backlightOn ? '*' : (char) 165);
@@ -3842,7 +3981,8 @@ void isr ()  {
 }
 
 void saveConfig () {
-// Save configuration to EEPROM
+  // Save configuration to EEPROM, only if value has changed, to
+  // increase EEPROM life.
   EEPROM.updateByte(addressSignature, MorserSignature);
   EEPROM.updateBlock(addressCWsettings, CWsettings);
 }
