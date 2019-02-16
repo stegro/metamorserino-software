@@ -2310,6 +2310,10 @@ void updateGeneratorMode() {
     generatorMode = ABBREVS;
   else if (CWsettings.generatorMode == 11){
     generatorMode = QSOTEXT;
+    // make sure the groupof5 generated within the qso text are just
+    // letters and do not contain prosigns or punctuation.
+    startPool = bounds[BOUNDS_ALPHANUMERIC][0];
+    endPool = bounds[BOUNDS_ALPHANUMERIC][1] + 1;
     initNewQSO();
   }else if (CWsettings.generatorMode == 12){
     generatorMode = CHOICE;
