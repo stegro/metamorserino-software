@@ -539,9 +539,11 @@ struct linklist {
 };
 
 #define CWTREE_UNKNOWN_SIG 69
+#define CWTREE_BLANK_SIG 70
 //a square, centered dot - used for all unidentifiable characters:
 #define UNKNOWN_SIG_SYMB 165
 const struct linklist CWtree[]  = {
+#define CWTREE_ROOT 0
   {1,2,0},      // 0
   { 3,4,A2IDX('e')},     // 1
   {5,6,A2IDX('t')},      // 2
@@ -630,15 +632,17 @@ const struct linklist CWtree[]  = {
   {CWTREE_UNKNOWN_SIG, 68,NOT_IN_POOL_IDX},// 67
 #define BK_SYMB 11
   {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,BK_IDX},// <bk> 68
-  {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,NOT_IN_POOL_IDX}// 69 Default
+  {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,NOT_IN_POOL_IDX},// 69 Default
                                                       // for all
                                                       // unidentified
                                                       // characters
+  {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,BLANK_IDX}// 70 Just to be able to
+                                                    //point the treeptr to a blank
 };
 
 // pointer used to navigate within the linked list representing the
 // dichotomic tree
-byte treeptr = 0;
+byte treeptr = CWTREE_ROOT;
 // the string that results from decoding one sign
 char sigString[5];
 
@@ -2420,10 +2424,8 @@ boolean doPaddleIambic (boolean leftKey, boolean rightKey) {
   case IDLE_STATE:
     // display the interword space, if necessary
     if (millis() > interWordTimer) {
-      pushChar(' ', true);
-      //do NOT increment signCounter for blanks here.
-      signCounter_inclBlanks++;
-      charCounter++;
+      treeptr = CWTREE_BLANK_SIG;
+      displayMorse();
       // the biggest possible unsigned long number - do not
       // output extra spaces!
       interWordTimer = ~0ul;
@@ -2431,7 +2433,7 @@ boolean doPaddleIambic (boolean leftKey, boolean rightKey) {
     // Was there a paddle press?
     if (leftKey || rightKey) {
       update_PaddleLatch(leftKey, rightKey);  // trigger the paddle latches
-      treeptr = 0;
+      treeptr = CWTREE_ROOT;
 
       if (leftKey) {
         setDITstate();          // set next state
@@ -2675,7 +2677,7 @@ void togglePolarity () {
 
 /// displaying decoded morse code
 void displayMorse() {
-  if (treeptr == 0)
+  if (treeptr == CWTREE_ROOT)
     return;
   if(generatorMode == CHOICE &&
      secondaryMode == SEC_MODE_INPUT) {
@@ -2690,7 +2692,7 @@ void displayMorse() {
       secondaryMode = SEC_MODE_PROCESS;
 
       // reset tree pointer
-      treeptr = 0;
+      treeptr = CWTREE_ROOT;
       // do not display it in this case.
       return;
     }else if(CWtree[treeptr].sigidx != BLANK_IDX){
@@ -2715,7 +2717,7 @@ void displayMorse() {
   charCounter += strlen(sigString);
 
   // reset tree pointer
-  treeptr = 0;
+  treeptr = CWTREE_ROOT;
 
   if(generatorMode == CHOICE &&
      secondaryMode == SEC_MODE_INPUT &&
@@ -3958,7 +3960,8 @@ void doDecode() {
       if (lowDuration > (lacktime * ditAvg)) {
         // since the blank is not in the linklist at the moment, one
         // cannot point the treeptr to it...
-        pushChar(' ', true);
+        treeptr = CWTREE_BLANK_SIG;
+        displayMorse();
         decoderState = LOW_;
       }
     }
