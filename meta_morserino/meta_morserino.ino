@@ -20,6 +20,8 @@ const byte MorserSignature = '.';
 #endif
 
 
+#define ENABLE_QSOTEXT_GENERATOR
+
 //#define USB_KEYBOARD_OUTPUT
 #ifdef USB_KEYBOARD_OUTPUT
 #include <Keyboard.h>
@@ -336,13 +338,19 @@ const char group07[] PROGMEM = "\xE1" "a9   ";
 const char group08[] PROGMEM = "\xE1" "a9?<>";
 const char group09[] PROGMEM = "CALLs ";
 const char group10[] PROGMEM = "ABBRV ";
-const char group11[] PROGMEM = "QSO   ";
-const char group12[] PROGMEM = "CHOICE";
+const char group11[] PROGMEM = "CHOICE";
+#define GENERATOR_MODE_KOCH_OFFSET 12
+#ifdef ENABLE_QSOTEXT_GENERATOR
+const char group12[] PROGMEM = "QSO   ";
+#define GENERATOR_MODE_KOCH_OFFSET 13
+#endif
 #ifdef ENABLE_TEST_GENERATOR
 const char group13[] PROGMEM = "TEST  ";
+#ifdef ENABLE_TEST_GENERATOR
 #define GENERATOR_MODE_KOCH_OFFSET 14
 #else
 #define GENERATOR_MODE_KOCH_OFFSET 13
+#endif
 #endif
 #define NUMBER_OF_TRAINING_GROUPS (GENERATOR_MODE_KOCH_OFFSET + GENERATOR_MODE_N_KOCH_LEVELS)
 
@@ -359,7 +367,9 @@ const char * const groups[GENERATOR_MODE_KOCH_OFFSET] PROGMEM = {
   group09,
   group10,
   group11,
+#ifdef ENABLE_QSOTEXT_GENERATOR
   group12,
+#endif
 #ifdef ENABLE_TEST_GENERATOR
   group13,
 #endif
@@ -1051,6 +1061,7 @@ byte qso_callsign2[MAX_SIG_WORD_LENGTH];
 byte qso_name1[ABBREV_MAX_SIZE+1];
 byte qso_name2[ABBREV_MAX_SIZE+1];
 
+#ifdef ENABLE_QSOTEXT_GENERATOR
 /* root list of qsotree is a seq list. */
 /* each element of a list can be an element or any other kind of list. */
 // this tree contains abbrev indices, i.e. indices with respect to the
@@ -1334,14 +1345,18 @@ void initNewQSO(){
   generateGroupOf5();
   memcpy(qso_name2, current_sig_word, 7);
 }
-
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //
 //   State Machine Defines
 
 enum __attribute__ ((__packed__)) MORSE_TYPE {KEY_DOWN=0, KEY_UP };
-enum __attribute__ ((__packed__)) GEN_TYPE { GROUPOF5=0, CALLSIGNS,  ABBREVS, QSOTEXT, CHOICE, KOCH
+enum __attribute__ ((__packed__)) GEN_TYPE { GROUPOF5=0, CALLSIGNS,  ABBREVS, CHOICE,
+#ifdef ENABLE_QSOTEXT_GENERATOR
+QSOTEXT,
+#endif
+    KOCH
 #ifdef ENABLE_TEST_GENERATOR
                 , TEST_ALL_SIGNS
 #endif
@@ -2313,18 +2328,21 @@ void updateGeneratorMode() {
   else if (CWsettings.generatorMode == 10)
     generatorMode = ABBREVS;
   else if (CWsettings.generatorMode == 11){
+    generatorMode = CHOICE;
+    // empty the buffer of the sigs. this triggers asking for sigs at
+    // the next squeeze.
+    qso_callsign1[0] = END_OF_WORD_IDX;
+  }
+#ifdef ENABLE_QSOTEXT_GENERATOR
+  else if (CWsettings.generatorMode == 12){
     generatorMode = QSOTEXT;
     // make sure the groupof5 generated within the qso text are just
     // letters and do not contain prosigns or punctuation.
     startPool = bounds[BOUNDS_ALPHANUMERIC][0];
     endPool = bounds[BOUNDS_ALPHANUMERIC][1] + 1;
     initNewQSO();
-  }else if (CWsettings.generatorMode == 12){
-    generatorMode = CHOICE;
-    // empty the buffer of the sigs. this triggers asking for sigs at
-    // the next squeeze.
-    qso_callsign1[0] = END_OF_WORD_IDX;
   }
+#endif
 #ifdef ENABLE_TEST_GENERATOR
   else if (CWsettings.generatorMode == 13)
     generatorMode = TEST_ALL_SIGNS;
@@ -3086,12 +3104,14 @@ void fetchNextWord() {
     case ABBREVS:
       generateAbbrev();
       break;
+#ifdef ENABLE_QSOTEXT_GENERATOR
     case QSOTEXT:
       generateQSOText();
 #ifdef SIMULATE_MISTAKES
       makeMistakeAndHH();
 #endif
       break;
+#endif
     case CHOICE:
       generateOwnSigsGroupOf5();
       break;
@@ -3108,6 +3128,7 @@ void fetchNextWord() {
 
 }
 
+#ifdef ENABLE_QSOTEXT_GENERATOR
 #ifdef SIMULATE_MISTAKES
 void makeMistakeAndHH() {
   if(whichQSOElem == thisNoMistake) {
@@ -3130,7 +3151,7 @@ void makeMistakeAndHH() {
   }
 }
 #endif
-
+#endif
 
 void fetchNextSig() {
   icurrent_sig++;
@@ -3323,6 +3344,7 @@ void generateOwnSigsGroupOf5() {
 }
 
 
+#ifdef ENABLE_QSOTEXT_GENERATOR
 void generateQSOText() {
   if(!nextQSOElem(true)) {
     //before starting a new qso, generate a number of blanks to have
@@ -3501,6 +3523,7 @@ void evalQSOElem(int16_t iqso) {
   current_sig_word[i++] = BLANK_IDX;
   current_sig_word[i] = END_OF_WORD_IDX;
 }
+#endif
 
 void generateCallsign() {
   // generate a new random string that looks like a callsign
@@ -3729,7 +3752,11 @@ void topMenu() {
           // immediately overwrites the lower line of the screen.
           interWordTimer = ~0ul;
           quickEcho_lastWordCorrect = true;
-          if(generatorMode == CALLSIGNS || generatorMode == QSOTEXT){
+          if(generatorMode == CALLSIGNS
+#ifdef ENABLE_QSOTEXT_GENERATOR
+             || generatorMode == QSOTEXT
+#endif
+             ){
             // these two dont make much sense for this.
             //generatorMode = ABBREVS;
             generatorMode = GROUPOF5;
