@@ -695,7 +695,7 @@ byte sig_cw_elems[8];
 unsigned char generatorState, generatorMode;
 // need to be properly initialised:
 unsigned int interCharacterSpace, interWordSpace;
-unsigned long timer;
+unsigned long timer = 0;
 uint8_t pointer = 0;
 uint8_t startPool, endPool, kochLevel;
 // to indicate that we are starting a new sequence in trainer mode
@@ -1191,11 +1191,10 @@ boolean nextQSOElem(boolean save_iqso){
         iqso = getListElemStartIndex(currentlist_start,
                                      random(0, getListLen(iqso)));
       }else if(iqso_byte == LIST_MIX) {
+        do{
         iqso = getListElemStartIndex(currentlist_start,
                                      random(0, getListLen(iqso)));
-        while(mixHistoryContains(iqso))
-          iqso = getListElemStartIndex(currentlist_start,
-                                       random(0, getListLen(iqso)));
+        }while(mixHistoryContains(iqso));
         // now iqso is an element of this list which has not been used
         // yet. record it, in order not to choose it any more.
         mixHistory[mixHistoryLength++] = iqso;
@@ -3712,9 +3711,7 @@ void generateCallsign() {
     switch(random(0, 5)) {
     case 0:
       current_sig_word[l++] = M_IDX;
-      break;
     case 1:
-      current_sig_word[l++] = M_IDX;
       current_sig_word[l++] = M_IDX;
       break;
     case 2:
@@ -4133,12 +4130,14 @@ void doDecode() {
       }
     }
     break;
-  case LOW_:          if (checkTone()) {
+  case LOW_:
+    if (checkTone()) {
       ON_();
       decoderState = HIGH_;
     }
     break;
-  case HIGH_:         if (checkTone()) {
+  case HIGH_:
+    if (checkTone()) {
       OFF_();
       decoderState = INTERELEMENT_;
     }
