@@ -352,13 +352,16 @@ const char group11[] PROGMEM = "CHOICE";
 #define GENERATOR_MODE_KOCH_OFFSET 12
 #ifdef ENABLE_QSOTEXT_GENERATOR
 const char group12[] PROGMEM = "QSO   ";
+#undef GENERATOR_MODE_KOCH_OFFSET
 #define GENERATOR_MODE_KOCH_OFFSET 13
 #endif
 #ifdef ENABLE_TEST_GENERATOR
 const char group13[] PROGMEM = "TEST  ";
 #ifdef ENABLE_TEST_GENERATOR
+#undef GENERATOR_MODE_KOCH_OFFSET
 #define GENERATOR_MODE_KOCH_OFFSET 14
 #else
+#undef GENERATOR_MODE_KOCH_OFFSET
 #define GENERATOR_MODE_KOCH_OFFSET 13
 #endif
 #endif
@@ -1470,7 +1473,9 @@ void setup() {
   //   CWsettings struct CWs CWsettings (speed, polarity,  mode etc)
 
   // calculate addresses
+#ifdef ENABLE_AUTO_KEYER
   EEPROM.setMemPool(0, E2END);
+#endif
   addressSignature = EEPROM.getAddress(sizeof(byte));
   addressCWsettings = EEPROM.getAddress(sizeof(CWsettings));
 #ifdef ENABLE_AUTO_KEYER
@@ -1697,7 +1702,7 @@ void setupTrainerMode() {
 }
 
 
-void setupKeyerMode() {
+void setupKeyerMode(const __FlashStringHelper* msg) {
 
   reCalcSpeedSetting();
 
@@ -1705,7 +1710,7 @@ void setupKeyerMode() {
 
   keyerState = IDLE_STATE;
 
-  fullScreenMsg(F("Start CW Keyer"));
+  fullScreenMsg(msg);
 
   displayTopLine();
 }
@@ -2272,6 +2277,8 @@ void loop() {
 #ifdef ENABLE_AUTO_KEYER
       if(generatorMode == AUTO_KEYER_TEXT)
         generatorMode = GROUPOF5;
+      if(morseState == morseSetAutoKeyerText && signCounter)
+        EEPROM.updateByte(addressAutoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
 #endif
       topMenu();
       return;
@@ -3867,10 +3874,11 @@ void topMenu() {
         switch (morseState) {
 #ifdef ENABLE_AUTO_KEYER
         case morseSetAutoKeyerText:
-          fullScreenMsg(F("end wid unknown"));
-#endif
           clearCounters();
-        case morseKeyer:    setupKeyerMode();
+          setupKeyerMode(F("end wid unknown"));
+          break;
+#endif
+        case morseKeyer:    setupKeyerMode(F("Start CW Keyer"));
           break;
         case morseTrainer:  setupTrainerMode();
           break;
