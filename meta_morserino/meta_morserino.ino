@@ -2779,7 +2779,7 @@ void displayMorse() {
     return;
   if(generatorMode == CHOICE &&
      secondaryMode == SEC_MODE_INPUT) {
-    if(CWtree[treeptr].sigidx == AR_IDX){
+    if(CWtree[treeptr].sigidx == NOT_IN_POOL_IDX){
       // this is <ar> or max number of sigs.
       // this is the end of interactive input of sigs by the user.
 
@@ -3097,9 +3097,9 @@ void enterOwnSigsForGenerator(){
      generatorMode == CHOICE) {
     lcd.clear();
     lcd.setCursor(0,0);
-    lcd.print(F("ur sigs? pse k"));
+    lcd.print(F("qrv pse k = qru"));
     lcd.setCursor(0,1);
-    lcd.print(F("(qru wid <ar>)"));
+    lcd.print(F("wid unknown sig"));
 
     clearCounters();
 
