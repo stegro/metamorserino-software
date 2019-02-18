@@ -14,11 +14,17 @@ const byte MorserSignature = '.';
 // uncomment to enable serial debbugging communication
 //#define DEBUG
 
-#ifndef DEBUG
-// uncomment to simulate mistakes in QSOTEXT generator
-#define SIMULATE_MISTAKES
+
+//#define ENABLE_MEMO_KEYER
+
+#ifdef ENABLE_MEMO_KEYER
+//The macro E2END is the last EEPROM address.
+#define MAX_MEMO_TEXT_LENGTH (E2END-sizeof(byte)-sizeof(CWs)-2)
 #endif
 
+#define ENABLE_QSOTEXT_GENERATOR
+// uncomment to simulate mistakes in QSOTEXT generator
+#define SIMULATE_MISTAKES
 
 //#define USB_KEYBOARD_OUTPUT
 #ifdef USB_KEYBOARD_OUTPUT
@@ -239,7 +245,11 @@ int16_t scrollPosition = 0;
 /// the states the morserino can be in - top level menu
 enum __attribute__ ((__packed__)) morserinoMode {morseKeyer=0,
     morseTrainer, morseDecoder, morseCopyGame,
-    morseQuickEcho, morseBacklight,
+    morseQuickEcho,
+#ifdef ENABLE_MEMO_KEYER
+    morseSetAutoKeyerText,
+#endif
+    morseBacklight,
     numMorserinoModes};
 morserinoMode morseState = morseKeyer;
 
@@ -336,13 +346,22 @@ const char group07[] PROGMEM = "\xE1" "a9   ";
 const char group08[] PROGMEM = "\xE1" "a9?<>";
 const char group09[] PROGMEM = "CALLs ";
 const char group10[] PROGMEM = "ABBRV ";
-const char group11[] PROGMEM = "QSO   ";
-const char group12[] PROGMEM = "CHOICE";
+const char group11[] PROGMEM = "CHOICE";
+#define GENERATOR_MODE_KOCH_OFFSET 12
+#ifdef ENABLE_QSOTEXT_GENERATOR
+const char group12[] PROGMEM = "QSO   ";
+#undef GENERATOR_MODE_KOCH_OFFSET
+#define GENERATOR_MODE_KOCH_OFFSET 13
+#endif
 #ifdef ENABLE_TEST_GENERATOR
 const char group13[] PROGMEM = "TEST  ";
+#ifdef ENABLE_TEST_GENERATOR
+#undef GENERATOR_MODE_KOCH_OFFSET
 #define GENERATOR_MODE_KOCH_OFFSET 14
 #else
+#undef GENERATOR_MODE_KOCH_OFFSET
 #define GENERATOR_MODE_KOCH_OFFSET 13
+#endif
 #endif
 #define NUMBER_OF_TRAINING_GROUPS (GENERATOR_MODE_KOCH_OFFSET + GENERATOR_MODE_N_KOCH_LEVELS)
 
@@ -359,7 +378,9 @@ const char * const groups[GENERATOR_MODE_KOCH_OFFSET] PROGMEM = {
   group09,
   group10,
   group11,
+#ifdef ENABLE_QSOTEXT_GENERATOR
   group12,
+#endif
 #ifdef ENABLE_TEST_GENERATOR
   group13,
 #endif
@@ -539,9 +560,11 @@ struct linklist {
 };
 
 #define CWTREE_UNKNOWN_SIG 69
+#define CWTREE_BLANK_SIG 70
 //a square, centered dot - used for all unidentifiable characters:
 #define UNKNOWN_SIG_SYMB 165
 const struct linklist CWtree[]  = {
+#define CWTREE_ROOT 0
   {1,2,0},      // 0
   { 3,4,A2IDX('e')},     // 1
   {5,6,A2IDX('t')},      // 2
@@ -630,15 +653,17 @@ const struct linklist CWtree[]  = {
   {CWTREE_UNKNOWN_SIG, 68,NOT_IN_POOL_IDX},// 67
 #define BK_SYMB 11
   {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,BK_IDX},// <bk> 68
-  {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,NOT_IN_POOL_IDX}// 69 Default
+  {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,NOT_IN_POOL_IDX},// 69 Default
                                                       // for all
                                                       // unidentified
                                                       // characters
+  {CWTREE_UNKNOWN_SIG, CWTREE_UNKNOWN_SIG,BLANK_IDX}// 70 Just to be able to
+                                                    //point the treeptr to a blank
 };
 
 // pointer used to navigate within the linked list representing the
 // dichotomic tree
-byte treeptr = 0;
+byte treeptr = CWTREE_ROOT;
 // the string that results from decoding one sign
 char sigString[5];
 
@@ -671,7 +696,7 @@ byte sig_cw_elems[8];
 unsigned char generatorState, generatorMode;
 // need to be properly initialised:
 unsigned int interCharacterSpace, interWordSpace;
-unsigned long timer;
+unsigned long timer = 0;
 uint8_t pointer = 0;
 uint8_t startPool, endPool, kochLevel;
 // to indicate that we are starting a new sequence in trainer mode
@@ -712,7 +737,7 @@ const char abbrev13[] PROGMEM =  "age";
 const char abbrev14[] PROGMEM =  "agn";
 const char abbrev15[] PROGMEM =  "alc"; // <- not useful
 const char abbrev16[] PROGMEM =  "am";
-const char abbrev17[] PROGMEM =  "am";
+const char abbrev17[] PROGMEM =  "am"; // duplicate
 const char abbrev18[] PROGMEM =  "ans";
 const char abbrev19[] PROGMEM =  "ant";
 const char abbrev20[] PROGMEM =  "atv";
@@ -824,7 +849,7 @@ const char abbrev125[] PROGMEM =  "muf";
 const char abbrev126[] PROGMEM =  "my";
 const char abbrev127[] PROGMEM =  "n";
 const char abbrev128[] PROGMEM =  "net";
-const char abbrev129[] PROGMEM =  "nf";
+const char abbrev129[] PROGMEM =  "nf"; // <- not useful?
 const char abbrev130[] PROGMEM =  "nil";
 const char abbrev131[] PROGMEM =  "no";
 const char abbrev132[] PROGMEM =  "nice";
@@ -893,7 +918,7 @@ const char abbrev194[] PROGMEM =  "sstv";
 const char abbrev195[] PROGMEM =  "stn";
 const char abbrev196[] PROGMEM =  "sure";
 const char abbrev197[] PROGMEM =  "swl";
-const char abbrev198[] PROGMEM =  ","; // comma inserted here!
+const char abbrev198[] PROGMEM =  ","; // not useful
 const char abbrev199[] PROGMEM =  "t";
 const char abbrev200[] PROGMEM =  "temp";
 const char abbrev201[] PROGMEM =  "test";
@@ -926,7 +951,7 @@ const char abbrev227[] PROGMEM =  "wid";
 const char abbrev228[] PROGMEM =  "wkd";
 const char abbrev229[] PROGMEM =  "wkg";
 const char abbrev230[] PROGMEM =  "wl";
-const char abbrev231[] PROGMEM =  "?";
+const char abbrev231[] PROGMEM =  "?"; // not useful
 const char abbrev232[] PROGMEM =  "wtts";
 const char abbrev233[] PROGMEM =  "wx";
 const char abbrev234[] PROGMEM =  "xcus";
@@ -1047,6 +1072,7 @@ byte qso_callsign2[MAX_SIG_WORD_LENGTH];
 byte qso_name1[ABBREV_MAX_SIZE+1];
 byte qso_name2[ABBREV_MAX_SIZE+1];
 
+#ifdef ENABLE_QSOTEXT_GENERATOR
 /* root list of qsotree is a seq list. */
 /* each element of a list can be an element or any other kind of list. */
 // this tree contains abbrev indices, i.e. indices with respect to the
@@ -1087,7 +1113,7 @@ boolean nextQSOElem(boolean save_iqso){
     // first check if the current list has any elements left.
     currentlist_start_byte = pgm_read_byte_near(&(qsotree[currentlist_start]));
 
-    if(currentlist_start_byte == LIST_SEQ) {
+    if(currentlist_start_byte == LIST_SEQ || currentlist_start_byte == ESC_SPECIAL) {
       // have we just finished the current list?
       list_finished = (iqso == getListEnd(currentlist_start));
     }else if(currentlist_start_byte == LIST_ALT) {
@@ -1104,8 +1130,6 @@ boolean nextQSOElem(boolean save_iqso){
       // But this adds more code bytes to the rom than the simpler method adds data bytes!
       //if(list_finished) mixHistoryLength -= getListLen(currentlist_start);
     }else if(currentlist_start_byte == PROB) {
-      list_finished = true;
-    }else if(currentlist_start_byte == ESC_SPECIAL) {
       list_finished = true;
     }
 
@@ -1130,7 +1154,7 @@ boolean nextQSOElem(boolean save_iqso){
   // valid for this list.  it can be a seq or a mix list.  now go to its
   // next element!
 
-  if(currentlist_start_byte == LIST_SEQ){
+  if(currentlist_start_byte == LIST_SEQ || currentlist_start_byte == ESC_SPECIAL){
     if(iqso == currentlist_start)
       iqso += 2;
     else
@@ -1158,7 +1182,7 @@ boolean nextQSOElem(boolean save_iqso){
 
       //we have to get the next element of that list, instead of
       //returning the list start element.
-      if(iqso_byte == LIST_SEQ) {
+      if(iqso_byte == LIST_SEQ || iqso_byte == ESC_SPECIAL) {
         // the following byte is the list length.
         // so skip that one and go to the one after.
         iqso += 2;
@@ -1166,11 +1190,10 @@ boolean nextQSOElem(boolean save_iqso){
         iqso = getListElemStartIndex(currentlist_start,
                                      random(0, getListLen(iqso)));
       }else if(iqso_byte == LIST_MIX) {
+        do{
         iqso = getListElemStartIndex(currentlist_start,
                                      random(0, getListLen(iqso)));
-        while(mixHistoryContains(iqso))
-          iqso = getListElemStartIndex(currentlist_start,
-                                       random(0, getListLen(iqso)));
+        }while(mixHistoryContains(iqso));
         // now iqso is an element of this list which has not been used
         // yet. record it, in order not to choose it any more.
         mixHistory[mixHistoryLength++] = iqso;
@@ -1182,10 +1205,7 @@ boolean nextQSOElem(boolean save_iqso){
           iqso = getListEnd(currentlist_start);
 
           return nextQSOElem(false);
-        }else{
         }
-      }else if(iqso_byte == ESC_SPECIAL) {
-        iqso = currentlist_start + 2;
       }
     }else{
       // just a normal element, indicating an abbrev or something special.
@@ -1217,14 +1237,8 @@ boolean isEscSpecial(byte iqso_byte){
 }
 
 uint16_t getListLen(uint16_t list_start){
-  switch(pgm_read_byte_near(&(qsotree[list_start]))){
-  case PROB:
-  case ESC_SPECIAL:
-    // the length byte for the ESC_SPECIAL list is just ignored.
-    return 1;
-  default:
-    return pgm_read_byte_near(&(qsotree[list_start + 1]));
-  }
+  return pgm_read_byte_near(&(qsotree[list_start])) == PROB ?
+    1 : pgm_read_byte_near(&(qsotree[list_start + 1]));
 }
 
 uint16_t getListStart(uint16_t iqso){
@@ -1255,7 +1269,7 @@ uint16_t getListStart(uint16_t iqso){
       }
     }
     if(jqso == 0){
-      // if jqso=0 (which is the root liststart) has not triggered the
+      // if jqso==0 (which is the root liststart) has not triggered the
       // return above then there is no open list left. end of qso.
 
       // return something to indicate end-of-qso: a number > iqso is
@@ -1330,18 +1344,26 @@ void initNewQSO(){
   generateGroupOf5();
   memcpy(qso_name2, current_sig_word, 7);
 }
-
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 //
 //   State Machine Defines
 
 enum __attribute__ ((__packed__)) MORSE_TYPE {KEY_DOWN=0, KEY_UP };
-enum __attribute__ ((__packed__)) GEN_TYPE { GROUPOF5=0, CALLSIGNS,  ABBREVS, QSOTEXT, CHOICE, KOCH
+enum __attribute__ ((__packed__)) GEN_TYPE { GROUPOF5=0, CALLSIGNS,  ABBREVS, CHOICE,
+#ifdef ENABLE_QSOTEXT_GENERATOR
+QSOTEXT,
+#endif
+    KOCH
 #ifdef ENABLE_TEST_GENERATOR
                 , TEST_ALL_SIGNS
 #endif
-              };
+#ifdef ENABLE_MEMO_KEYER
+    // this one is not available in the CW Trainer
+    , MEMO_KEYER_TEXT
+#endif
+    };
 
 /// variables for morse decoder
 ///////////////////////////////
@@ -1419,6 +1441,9 @@ boolean filteredState = false;
 boolean filteredStateBefore = false;
 
 int addressSignature, addressCWsettings;
+#ifdef ENABLE_MEMO_KEYER
+int addressMemoText;
+#endif
 
 void setup() {
 
@@ -1435,12 +1460,28 @@ void setup() {
   //   CWsettings struct CWs CWsettings (speed, polarity,  mode etc)
 
   // calculate addresses
+#ifdef ENABLE_MEMO_KEYER
+  EEPROM.setMemPool(0, E2END);
+#endif
   addressSignature = EEPROM.getAddress(sizeof(byte));
   addressCWsettings = EEPROM.getAddress(sizeof(CWsettings));
+#ifdef ENABLE_MEMO_KEYER
+  addressMemoText = EEPROM.getAddress(MAX_MEMO_TEXT_LENGTH);
+#ifdef DEBUG
+  /* Serial.println(MAX_MEMO_TEXT_LENGTH); */
+  /* Serial.println(addressMemoText); */
+#endif
+#endif
   if (EEPROM.readByte(addressSignature) == MorserSignature) {
     // OK, we read in values from EEPROM
     EEPROM.readBlock(addressCWsettings, CWsettings);
+  }else{
     // otherwise we use the defaults defined in this program
+
+#ifdef ENABLE_MEMO_KEYER
+    // erase the Auto Keyer Text
+    EEPROM.updateByte(addressMemoText, NOT_IN_POOL_IDX);
+#endif
   }
   // first use of device with this version: use defaults, run i2c
   // scanner, write results into EEPROM
@@ -1648,7 +1689,7 @@ void setupTrainerMode() {
 }
 
 
-void setupKeyerMode() {
+void setupKeyerMode(const __FlashStringHelper* msg) {
 
   reCalcSpeedSetting();
 
@@ -1656,7 +1697,7 @@ void setupKeyerMode() {
 
   keyerState = IDLE_STATE;
 
-  fullScreenMsg(F("Start CW Keyer"));
+  fullScreenMsg(msg);
 
   displayTopLine();
 }
@@ -1904,7 +1945,19 @@ void reCalcSpeedSetting() {
 void loop() {
   checkPaddles();
   switch (morseState) {
+#ifdef ENABLE_MEMO_KEYER
+  case morseSetAutoKeyerText:
+    if (doPaddleIambic(leftKey, rightKey))
+      // we are busy keying and so need a very tight loop !
+      return;
+    break;
+#endif
   case morseKeyer:
+#ifdef ENABLE_MEMO_KEYER
+    if (generatorMode == MEMO_KEYER_TEXT) {
+      generateCW();
+    } else
+#endif
     if (doPaddleIambic(leftKey, rightKey))
       // we are busy keying and so need a very tight loop !
       return;
@@ -2174,7 +2227,23 @@ void loop() {
         showMarks = !showMarks;
         showCopyGameResult(resultSnippetLength);
       }
-    } else {
+    }
+#ifdef ENABLE_MEMO_KEYER
+    else if(morseState == morseKeyer){
+      if(generatorMode == MEMO_KEYER_TEXT){
+        generatorMode = GROUPOF5;
+        generatorState = KEY_UP;
+        vol.noTone();
+      }else {
+        // key the auto-text from the EEPROM
+        generatorMode = MEMO_KEYER_TEXT;
+        active = true;
+        startCW();
+        prepNewGeneratorRun(false);
+      }
+    }
+#endif
+    else {
       encoderState = (encoderMode)((encoderState + numEncoderModes - 1) % numEncoderModes);
       displayEncoderMode(true);
       enterOwnSigsForGenerator();
@@ -2192,6 +2261,12 @@ void loop() {
       displayEncoderMode(true);
       enterOwnSigsForGenerator();
     } else {
+#ifdef ENABLE_MEMO_KEYER
+      if(generatorMode == MEMO_KEYER_TEXT)
+        generatorMode = GROUPOF5;
+      if(morseState == morseSetAutoKeyerText && signCounter)
+        EEPROM.updateByte(addressMemoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
+#endif
       topMenu();
       return;
     }
@@ -2222,13 +2297,21 @@ void loop() {
       clearCounters();
       break;
     case curtisSettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_MEMO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         setCurtisMode();
       else
         setFarnsworthMode();
       break;
     case polaritySettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_MEMO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         setPolarityMode();
       else
         setGeneratorMode();
@@ -2309,22 +2392,28 @@ void updateGeneratorMode() {
   else if (CWsettings.generatorMode == 10)
     generatorMode = ABBREVS;
   else if (CWsettings.generatorMode == 11){
+    generatorMode = CHOICE;
+    // empty the buffer of the sigs. this triggers asking for sigs at
+    // the next squeeze.
+    qso_callsign1[0] = END_OF_WORD_IDX;
+  }
+#ifdef ENABLE_QSOTEXT_GENERATOR
+  else if (CWsettings.generatorMode == 12){
     generatorMode = QSOTEXT;
     // make sure the groupof5 generated within the qso text are just
     // letters and do not contain prosigns or punctuation.
     startPool = bounds[BOUNDS_ALPHANUMERIC][0];
     endPool = bounds[BOUNDS_ALPHANUMERIC][1] + 1;
     initNewQSO();
-  }else if (CWsettings.generatorMode == 12){
-    generatorMode = CHOICE;
-    // empty the buffer of the sigs. this triggers asking for sigs at
-    // the next squeeze.
-    qso_callsign1[0] = END_OF_WORD_IDX;
   }
+#endif
 #ifdef ENABLE_TEST_GENERATOR
   else if (CWsettings.generatorMode == 13)
     generatorMode = TEST_ALL_SIGNS;
 #endif
+
+  // the MEMO_KEYER_TEXT generator is not available in the CW Trainer.
+
   else {
     generatorMode = KOCH;
     kochLevel = CWsettings.generatorMode - GENERATOR_MODE_KOCH_OFFSET;
@@ -2420,10 +2509,8 @@ boolean doPaddleIambic (boolean leftKey, boolean rightKey) {
   case IDLE_STATE:
     // display the interword space, if necessary
     if (millis() > interWordTimer) {
-      pushChar(' ', true);
-      //do NOT increment signCounter for blanks here.
-      signCounter_inclBlanks++;
-      charCounter++;
+      treeptr = CWTREE_BLANK_SIG;
+      displayMorse();
       // the biggest possible unsigned long number - do not
       // output extra spaces!
       interWordTimer = ~0ul;
@@ -2431,7 +2518,7 @@ boolean doPaddleIambic (boolean leftKey, boolean rightKey) {
     // Was there a paddle press?
     if (leftKey || rightKey) {
       update_PaddleLatch(leftKey, rightKey);  // trigger the paddle latches
-      treeptr = 0;
+      treeptr = CWTREE_ROOT;
 
       if (leftKey) {
         setDITstate();          // set next state
@@ -2675,11 +2762,11 @@ void togglePolarity () {
 
 /// displaying decoded morse code
 void displayMorse() {
-  if (treeptr == 0)
+  if (treeptr == CWTREE_ROOT)
     return;
   if(generatorMode == CHOICE &&
      secondaryMode == SEC_MODE_INPUT) {
-    if(CWtree[treeptr].sigidx == AR_IDX){
+    if(CWtree[treeptr].sigidx == NOT_IN_POOL_IDX){
       // this is <ar> or max number of sigs.
       // this is the end of interactive input of sigs by the user.
 
@@ -2690,7 +2777,7 @@ void displayMorse() {
       secondaryMode = SEC_MODE_PROCESS;
 
       // reset tree pointer
-      treeptr = 0;
+      treeptr = CWTREE_ROOT;
       // do not display it in this case.
       return;
     }else if(CWtree[treeptr].sigidx != BLANK_IDX){
@@ -2702,6 +2789,25 @@ void displayMorse() {
     // misuse the sig buffer from qso generator:
     qso_name2[signCounter] = CWtree[treeptr].sigidx;
   }
+#ifdef ENABLE_MEMO_KEYER
+  else if(morseState == morseSetAutoKeyerText) {
+    if(CWtree[treeptr].sigidx == NOT_IN_POOL_IDX || signCounter_inclBlanks == MAX_MEMO_TEXT_LENGTH-1){
+      EEPROM.updateByte(addressMemoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
+
+      fullScreenMsg(F("hv saved ur msg."));
+      // reset tree pointer
+      treeptr = CWTREE_ROOT;
+
+      // leave
+      topMenu();
+
+      // cannot display it in this case.
+      return;
+    }else
+      EEPROM.updateByte(addressMemoText + signCounter_inclBlanks, CWtree[treeptr].sigidx);
+
+  }
+#endif
 
   fillSigString(CWtree[treeptr].sigidx);
 
@@ -2715,7 +2821,7 @@ void displayMorse() {
   charCounter += strlen(sigString);
 
   // reset tree pointer
-  treeptr = 0;
+  treeptr = CWTREE_ROOT;
 
   if(generatorMode == CHOICE &&
      secondaryMode == SEC_MODE_INPUT &&
@@ -2844,8 +2950,16 @@ void displayTopLine() {
   // update display of CW speed
 
   displayCWspeed(CWsettings.wpm,
-                 morseState == morseKeyer || morseState == morseDecoder);
-  if (morseState == morseKeyer || morseState == morseDecoder) {
+                 morseState == morseKeyer ||
+#ifdef ENABLE_MEMO_KEYER
+                 morseState == morseSetAutoKeyerText ||
+#endif
+                 morseState == morseDecoder);
+  if (morseState == morseKeyer ||
+#ifdef ENABLE_MEMO_KEYER
+      morseState == morseSetAutoKeyerText ||
+#endif
+      morseState == morseDecoder) {
     displayCurtisMode(CWsettings.keyermode);              // and of Curtis mode
     displayPolarity();                                    // and paddle polarity
   } else {
@@ -2929,13 +3043,21 @@ void displayEncoderMode(boolean enteringMode) {
       displayCWspeed (CWsettings.wpm, true);
       break;
     case curtisSettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_MEMO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         displayCurtisMode(CWsettings.keyermode);
       else
         displayFarnsworthMode();
       break;
     case polaritySettingMode:
-      if (morseState == morseKeyer || morseState == morseDecoder)
+      if (morseState == morseKeyer ||
+#ifdef ENABLE_MEMO_KEYER
+          morseState == morseSetAutoKeyerText ||
+#endif
+          morseState == morseDecoder)
         displayPolarity();
       else
         displayGeneratorMode();
@@ -2962,9 +3084,9 @@ void enterOwnSigsForGenerator(){
      generatorMode == CHOICE) {
     lcd.clear();
     lcd.setCursor(0,0);
-    lcd.print(F("ur sigs? pse k"));
+    lcd.print(F("qrv pse k = qru"));
     lcd.setCursor(0,1);
-    lcd.print(F("(qru wid <ar>)"));
+    lcd.print(F("wid unknown sig"));
 
     clearCounters();
 
@@ -3084,12 +3206,14 @@ void fetchNextWord() {
     case ABBREVS:
       generateAbbrev();
       break;
+#ifdef ENABLE_QSOTEXT_GENERATOR
     case QSOTEXT:
       generateQSOText();
 #ifdef SIMULATE_MISTAKES
       makeMistakeAndHH();
 #endif
       break;
+#endif
     case CHOICE:
       generateOwnSigsGroupOf5();
       break;
@@ -3101,11 +3225,17 @@ void fetchNextWord() {
       generateTestAllSigns();
       break;
 #endif
+#ifdef ENABLE_MEMO_KEYER
+    case MEMO_KEYER_TEXT:
+      generateAutoKeyerText();
+      break;
+#endif
     }
   }
 
 }
 
+#ifdef ENABLE_QSOTEXT_GENERATOR
 #ifdef SIMULATE_MISTAKES
 void makeMistakeAndHH() {
   if(whichQSOElem == thisNoMistake) {
@@ -3128,7 +3258,7 @@ void makeMistakeAndHH() {
   }
 }
 #endif
-
+#endif
 
 void fetchNextSig() {
   icurrent_sig++;
@@ -3320,7 +3450,23 @@ void generateOwnSigsGroupOf5() {
   }
 }
 
+#ifdef ENABLE_MEMO_KEYER
+void generateAutoKeyerText() {
+  int8_t i = -1;
+  do{
+    ++i;
+    current_sig_word[i] = EEPROM.readByte(addressMemoText + signCounter_inclBlanks + i+1);
+  }while(current_sig_word[i] != NOT_IN_POOL_IDX && i < MAX_SIG_WORD_LENGTH-1);
+  current_sig_word[i] = END_OF_WORD_IDX;
+  if(i == 0) {
+    // just something else than MEMO_KEYER_TEXT. This makes the
+    // morserino responsible for input again.
+    generatorMode = GROUPOF5;
+  }
+}
+#endif
 
+#ifdef ENABLE_QSOTEXT_GENERATOR
 void generateQSOText() {
   if(!nextQSOElem(true)) {
     //before starting a new qso, generate a number of blanks to have
@@ -3499,6 +3645,7 @@ void evalQSOElem(int16_t iqso) {
   current_sig_word[i++] = BLANK_IDX;
   current_sig_word[i] = END_OF_WORD_IDX;
 }
+#endif
 
 void generateCallsign() {
   // generate a new random string that looks like a callsign
@@ -3558,9 +3705,7 @@ void generateCallsign() {
     switch(random(0, 5)) {
     case 0:
       current_sig_word[l++] = M_IDX;
-      break;
     case 1:
-      current_sig_word[l++] = M_IDX;
       current_sig_word[l++] = M_IDX;
       break;
     case 2:
@@ -3714,7 +3859,13 @@ void topMenu() {
         // a single click in top menu means enter a mode
 
         switch (morseState) {
-        case morseKeyer:    setupKeyerMode();
+#ifdef ENABLE_MEMO_KEYER
+        case morseSetAutoKeyerText:
+          clearCounters();
+          setupKeyerMode(F("end wid unknown"));
+          break;
+#endif
+        case morseKeyer:    setupKeyerMode(F("Start CW Keyer"));
           break;
         case morseTrainer:  setupTrainerMode();
           break;
@@ -3727,7 +3878,11 @@ void topMenu() {
           // immediately overwrites the lower line of the screen.
           interWordTimer = ~0ul;
           quickEcho_lastWordCorrect = true;
-          if(generatorMode == CALLSIGNS || generatorMode == QSOTEXT){
+          if(generatorMode == CALLSIGNS
+#ifdef ENABLE_QSOTEXT_GENERATOR
+             || generatorMode == QSOTEXT
+#endif
+             ){
             // these two dont make much sense for this.
             //generatorMode = ABBREVS;
             generatorMode = GROUPOF5;
@@ -3780,6 +3935,11 @@ void printTopMenu(morserinoMode mode) {
     case morseQuickEcho:
       lcd.print(F("Quick Echo"));
       break;
+#ifdef ENABLE_MEMO_KEYER
+  case morseSetAutoKeyerText:
+      lcd.print(F("Memorize"));
+      break;
+#endif
     case morseBacklight:
       lcd.print(F("Backlight "));
       lcd.print(CWsettings.backlightOn ? '*' : (char) 165);
@@ -3813,7 +3973,8 @@ void isr ()  {
 }
 
 void saveConfig () {
-// Save configuration to EEPROM
+  // Save configuration to EEPROM, only if value has changed, to
+  // increase EEPROM life.
   EEPROM.updateByte(addressSignature, MorserSignature);
   EEPROM.updateBlock(addressCWsettings, CWsettings);
 }
@@ -3958,17 +4119,20 @@ void doDecode() {
       if (lowDuration > (lacktime * ditAvg)) {
         // since the blank is not in the linklist at the moment, one
         // cannot point the treeptr to it...
-        pushChar(' ', true);
+        treeptr = CWTREE_BLANK_SIG;
+        displayMorse();
         decoderState = LOW_;
       }
     }
     break;
-  case LOW_:          if (checkTone()) {
+  case LOW_:
+    if (checkTone()) {
       ON_();
       decoderState = HIGH_;
     }
     break;
-  case HIGH_:         if (checkTone()) {
+  case HIGH_:
+    if (checkTone()) {
       OFF_();
       decoderState = INTERELEMENT_;
     }
