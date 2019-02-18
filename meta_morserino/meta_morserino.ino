@@ -14,12 +14,8 @@ const byte MorserSignature = '.';
 // uncomment to enable serial debbugging communication
 //#define DEBUG
 
-#ifndef DEBUG
-// uncomment to simulate mistakes in QSOTEXT generator
-#define SIMULATE_MISTAKES
-#endif
 
-#define ENABLE_AUTO_KEYER
+//#define ENABLE_AUTO_KEYER
 
 #ifdef ENABLE_AUTO_KEYER
 //The macro E2END is the last EEPROM address.
@@ -27,6 +23,8 @@ const byte MorserSignature = '.';
 #endif
 
 #define ENABLE_QSOTEXT_GENERATOR
+// uncomment to simulate mistakes in QSOTEXT generator
+#define SIMULATE_MISTAKES
 
 //#define USB_KEYBOARD_OUTPUT
 #ifdef USB_KEYBOARD_OUTPUT
@@ -1115,7 +1113,7 @@ boolean nextQSOElem(boolean save_iqso){
     // first check if the current list has any elements left.
     currentlist_start_byte = pgm_read_byte_near(&(qsotree[currentlist_start]));
 
-    if(currentlist_start_byte == LIST_SEQ) {
+    if(currentlist_start_byte == LIST_SEQ || currentlist_start_byte == ESC_SPECIAL) {
       // have we just finished the current list?
       list_finished = (iqso == getListEnd(currentlist_start));
     }else if(currentlist_start_byte == LIST_ALT) {
@@ -1132,8 +1130,6 @@ boolean nextQSOElem(boolean save_iqso){
       // But this adds more code bytes to the rom than the simpler method adds data bytes!
       //if(list_finished) mixHistoryLength -= getListLen(currentlist_start);
     }else if(currentlist_start_byte == PROB) {
-      list_finished = true;
-    }else if(currentlist_start_byte == ESC_SPECIAL) {
       list_finished = true;
     }
 
@@ -1158,7 +1154,7 @@ boolean nextQSOElem(boolean save_iqso){
   // valid for this list.  it can be a seq or a mix list.  now go to its
   // next element!
 
-  if(currentlist_start_byte == LIST_SEQ){
+  if(currentlist_start_byte == LIST_SEQ || currentlist_start_byte == ESC_SPECIAL){
     if(iqso == currentlist_start)
       iqso += 2;
     else
@@ -1186,7 +1182,7 @@ boolean nextQSOElem(boolean save_iqso){
 
       //we have to get the next element of that list, instead of
       //returning the list start element.
-      if(iqso_byte == LIST_SEQ) {
+      if(iqso_byte == LIST_SEQ || iqso_byte == ESC_SPECIAL) {
         // the following byte is the list length.
         // so skip that one and go to the one after.
         iqso += 2;
@@ -1209,10 +1205,7 @@ boolean nextQSOElem(boolean save_iqso){
           iqso = getListEnd(currentlist_start);
 
           return nextQSOElem(false);
-        }else{
         }
-      }else if(iqso_byte == ESC_SPECIAL) {
-        iqso = currentlist_start + 2;
       }
     }else{
       // just a normal element, indicating an abbrev or something special.
@@ -1244,14 +1237,8 @@ boolean isEscSpecial(byte iqso_byte){
 }
 
 uint16_t getListLen(uint16_t list_start){
-  switch(pgm_read_byte_near(&(qsotree[list_start]))){
-  case PROB:
-  case ESC_SPECIAL:
-    // the length byte for the ESC_SPECIAL list is just ignored.
-    return 1;
-  default:
-    return pgm_read_byte_near(&(qsotree[list_start + 1]));
-  }
+  return pgm_read_byte_near(&(qsotree[list_start])) == PROB ?
+    1 : pgm_read_byte_near(&(qsotree[list_start + 1]));
 }
 
 uint16_t getListStart(uint16_t iqso){
@@ -1282,7 +1269,7 @@ uint16_t getListStart(uint16_t iqso){
       }
     }
     if(jqso == 0){
-      // if jqso=0 (which is the root liststart) has not triggered the
+      // if jqso==0 (which is the root liststart) has not triggered the
       // return above then there is no open list left. end of qso.
 
       // return something to indicate end-of-qso: a number > iqso is
