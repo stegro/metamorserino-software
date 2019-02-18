@@ -15,11 +15,11 @@ const byte MorserSignature = '.';
 //#define DEBUG
 
 
-//#define ENABLE_AUTO_KEYER
+//#define ENABLE_MEMO_KEYER
 
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
 //The macro E2END is the last EEPROM address.
-#define MAX_AUTO_TEXT_LENGTH (E2END-sizeof(byte)-sizeof(CWs)-2)
+#define MAX_MEMO_TEXT_LENGTH (E2END-sizeof(byte)-sizeof(CWs)-2)
 #endif
 
 #define ENABLE_QSOTEXT_GENERATOR
@@ -246,7 +246,7 @@ int16_t scrollPosition = 0;
 enum __attribute__ ((__packed__)) morserinoMode {morseKeyer=0,
     morseTrainer, morseDecoder, morseCopyGame,
     morseQuickEcho,
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
     morseSetAutoKeyerText,
 #endif
     morseBacklight,
@@ -737,7 +737,7 @@ const char abbrev13[] PROGMEM =  "age";
 const char abbrev14[] PROGMEM =  "agn";
 const char abbrev15[] PROGMEM =  "alc"; // <- not useful
 const char abbrev16[] PROGMEM =  "am";
-const char abbrev17[] PROGMEM =  "am";
+const char abbrev17[] PROGMEM =  "am"; // duplicate
 const char abbrev18[] PROGMEM =  "ans";
 const char abbrev19[] PROGMEM =  "ant";
 const char abbrev20[] PROGMEM =  "atv";
@@ -849,7 +849,7 @@ const char abbrev125[] PROGMEM =  "muf";
 const char abbrev126[] PROGMEM =  "my";
 const char abbrev127[] PROGMEM =  "n";
 const char abbrev128[] PROGMEM =  "net";
-const char abbrev129[] PROGMEM =  "nf";
+const char abbrev129[] PROGMEM =  "nf"; // <- not useful?
 const char abbrev130[] PROGMEM =  "nil";
 const char abbrev131[] PROGMEM =  "no";
 const char abbrev132[] PROGMEM =  "nice";
@@ -918,7 +918,7 @@ const char abbrev194[] PROGMEM =  "sstv";
 const char abbrev195[] PROGMEM =  "stn";
 const char abbrev196[] PROGMEM =  "sure";
 const char abbrev197[] PROGMEM =  "swl";
-const char abbrev198[] PROGMEM =  ","; // comma inserted here!
+const char abbrev198[] PROGMEM =  ","; // not useful
 const char abbrev199[] PROGMEM =  "t";
 const char abbrev200[] PROGMEM =  "temp";
 const char abbrev201[] PROGMEM =  "test";
@@ -951,7 +951,7 @@ const char abbrev227[] PROGMEM =  "wid";
 const char abbrev228[] PROGMEM =  "wkd";
 const char abbrev229[] PROGMEM =  "wkg";
 const char abbrev230[] PROGMEM =  "wl";
-const char abbrev231[] PROGMEM =  "?";
+const char abbrev231[] PROGMEM =  "?"; // not useful
 const char abbrev232[] PROGMEM =  "wtts";
 const char abbrev233[] PROGMEM =  "wx";
 const char abbrev234[] PROGMEM =  "xcus";
@@ -1359,9 +1359,9 @@ QSOTEXT,
 #ifdef ENABLE_TEST_GENERATOR
                 , TEST_ALL_SIGNS
 #endif
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
     // this one is not available in the CW Trainer
-    , AUTO_KEYER_TEXT
+    , MEMO_KEYER_TEXT
 #endif
     };
 
@@ -1441,8 +1441,8 @@ boolean filteredState = false;
 boolean filteredStateBefore = false;
 
 int addressSignature, addressCWsettings;
-#ifdef ENABLE_AUTO_KEYER
-int addressAutoText;
+#ifdef ENABLE_MEMO_KEYER
+int addressMemoText;
 #endif
 
 void setup() {
@@ -1460,16 +1460,16 @@ void setup() {
   //   CWsettings struct CWs CWsettings (speed, polarity,  mode etc)
 
   // calculate addresses
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
   EEPROM.setMemPool(0, E2END);
 #endif
   addressSignature = EEPROM.getAddress(sizeof(byte));
   addressCWsettings = EEPROM.getAddress(sizeof(CWsettings));
-#ifdef ENABLE_AUTO_KEYER
-  addressAutoText = EEPROM.getAddress(MAX_AUTO_TEXT_LENGTH);
+#ifdef ENABLE_MEMO_KEYER
+  addressMemoText = EEPROM.getAddress(MAX_MEMO_TEXT_LENGTH);
 #ifdef DEBUG
-  /* Serial.println(MAX_AUTO_TEXT_LENGTH); */
-  /* Serial.println(addressAutoText); */
+  /* Serial.println(MAX_MEMO_TEXT_LENGTH); */
+  /* Serial.println(addressMemoText); */
 #endif
 #endif
   if (EEPROM.readByte(addressSignature) == MorserSignature) {
@@ -1478,9 +1478,9 @@ void setup() {
   }else{
     // otherwise we use the defaults defined in this program
 
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
     // erase the Auto Keyer Text
-    EEPROM.updateByte(addressAutoText, NOT_IN_POOL_IDX);
+    EEPROM.updateByte(addressMemoText, NOT_IN_POOL_IDX);
 #endif
   }
   // first use of device with this version: use defaults, run i2c
@@ -1945,7 +1945,7 @@ void reCalcSpeedSetting() {
 void loop() {
   checkPaddles();
   switch (morseState) {
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
   case morseSetAutoKeyerText:
     if (doPaddleIambic(leftKey, rightKey))
       // we are busy keying and so need a very tight loop !
@@ -1953,8 +1953,8 @@ void loop() {
     break;
 #endif
   case morseKeyer:
-#ifdef ENABLE_AUTO_KEYER
-    if (generatorMode == AUTO_KEYER_TEXT) {
+#ifdef ENABLE_MEMO_KEYER
+    if (generatorMode == MEMO_KEYER_TEXT) {
       generateCW();
     } else
 #endif
@@ -2228,15 +2228,15 @@ void loop() {
         showCopyGameResult(resultSnippetLength);
       }
     }
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
     else if(morseState == morseKeyer){
-      if(generatorMode == AUTO_KEYER_TEXT){
+      if(generatorMode == MEMO_KEYER_TEXT){
         generatorMode = GROUPOF5;
         generatorState = KEY_UP;
         vol.noTone();
       }else {
         // key the auto-text from the EEPROM
-        generatorMode = AUTO_KEYER_TEXT;
+        generatorMode = MEMO_KEYER_TEXT;
         active = true;
         startCW();
         prepNewGeneratorRun(false);
@@ -2261,11 +2261,11 @@ void loop() {
       displayEncoderMode(true);
       enterOwnSigsForGenerator();
     } else {
-#ifdef ENABLE_AUTO_KEYER
-      if(generatorMode == AUTO_KEYER_TEXT)
+#ifdef ENABLE_MEMO_KEYER
+      if(generatorMode == MEMO_KEYER_TEXT)
         generatorMode = GROUPOF5;
       if(morseState == morseSetAutoKeyerText && signCounter)
-        EEPROM.updateByte(addressAutoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
+        EEPROM.updateByte(addressMemoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
 #endif
       topMenu();
       return;
@@ -2298,7 +2298,7 @@ void loop() {
       break;
     case curtisSettingMode:
       if (morseState == morseKeyer ||
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
           morseState == morseSetAutoKeyerText ||
 #endif
           morseState == morseDecoder)
@@ -2308,7 +2308,7 @@ void loop() {
       break;
     case polaritySettingMode:
       if (morseState == morseKeyer ||
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
           morseState == morseSetAutoKeyerText ||
 #endif
           morseState == morseDecoder)
@@ -2412,7 +2412,7 @@ void updateGeneratorMode() {
     generatorMode = TEST_ALL_SIGNS;
 #endif
 
-  // the AUTO_KEYER_TEXT generator is not available in the CW Trainer.
+  // the MEMO_KEYER_TEXT generator is not available in the CW Trainer.
 
   else {
     generatorMode = KOCH;
@@ -2789,10 +2789,10 @@ void displayMorse() {
     // misuse the sig buffer from qso generator:
     qso_name2[signCounter] = CWtree[treeptr].sigidx;
   }
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
   else if(morseState == morseSetAutoKeyerText) {
-    if(CWtree[treeptr].sigidx == NOT_IN_POOL_IDX || signCounter_inclBlanks == MAX_AUTO_TEXT_LENGTH-1){
-      EEPROM.updateByte(addressAutoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
+    if(CWtree[treeptr].sigidx == NOT_IN_POOL_IDX || signCounter_inclBlanks == MAX_MEMO_TEXT_LENGTH-1){
+      EEPROM.updateByte(addressMemoText + signCounter_inclBlanks, NOT_IN_POOL_IDX);
 
       fullScreenMsg(F("hv saved ur msg."));
       // reset tree pointer
@@ -2804,7 +2804,7 @@ void displayMorse() {
       // cannot display it in this case.
       return;
     }else
-      EEPROM.updateByte(addressAutoText + signCounter_inclBlanks, CWtree[treeptr].sigidx);
+      EEPROM.updateByte(addressMemoText + signCounter_inclBlanks, CWtree[treeptr].sigidx);
 
   }
 #endif
@@ -2951,12 +2951,12 @@ void displayTopLine() {
 
   displayCWspeed(CWsettings.wpm,
                  morseState == morseKeyer ||
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
                  morseState == morseSetAutoKeyerText ||
 #endif
                  morseState == morseDecoder);
   if (morseState == morseKeyer ||
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
       morseState == morseSetAutoKeyerText ||
 #endif
       morseState == morseDecoder) {
@@ -3044,7 +3044,7 @@ void displayEncoderMode(boolean enteringMode) {
       break;
     case curtisSettingMode:
       if (morseState == morseKeyer ||
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
           morseState == morseSetAutoKeyerText ||
 #endif
           morseState == morseDecoder)
@@ -3054,7 +3054,7 @@ void displayEncoderMode(boolean enteringMode) {
       break;
     case polaritySettingMode:
       if (morseState == morseKeyer ||
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
           morseState == morseSetAutoKeyerText ||
 #endif
           morseState == morseDecoder)
@@ -3225,8 +3225,8 @@ void fetchNextWord() {
       generateTestAllSigns();
       break;
 #endif
-#ifdef ENABLE_AUTO_KEYER
-    case AUTO_KEYER_TEXT:
+#ifdef ENABLE_MEMO_KEYER
+    case MEMO_KEYER_TEXT:
       generateAutoKeyerText();
       break;
 #endif
@@ -3450,16 +3450,16 @@ void generateOwnSigsGroupOf5() {
   }
 }
 
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
 void generateAutoKeyerText() {
   int8_t i = -1;
   do{
     ++i;
-    current_sig_word[i] = EEPROM.readByte(addressAutoText + signCounter_inclBlanks + i+1);
+    current_sig_word[i] = EEPROM.readByte(addressMemoText + signCounter_inclBlanks + i+1);
   }while(current_sig_word[i] != NOT_IN_POOL_IDX && i < MAX_SIG_WORD_LENGTH-1);
   current_sig_word[i] = END_OF_WORD_IDX;
   if(i == 0) {
-    // just something else than AUTO_KEYER_TEXT. This makes the
+    // just something else than MEMO_KEYER_TEXT. This makes the
     // morserino responsible for input again.
     generatorMode = GROUPOF5;
   }
@@ -3859,7 +3859,7 @@ void topMenu() {
         // a single click in top menu means enter a mode
 
         switch (morseState) {
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
         case morseSetAutoKeyerText:
           clearCounters();
           setupKeyerMode(F("end wid unknown"));
@@ -3935,9 +3935,9 @@ void printTopMenu(morserinoMode mode) {
     case morseQuickEcho:
       lcd.print(F("Quick Echo"));
       break;
-#ifdef ENABLE_AUTO_KEYER
+#ifdef ENABLE_MEMO_KEYER
   case morseSetAutoKeyerText:
-      lcd.print(F("Auto Text"));
+      lcd.print(F("Memorize"));
       break;
 #endif
     case morseBacklight:
