@@ -172,8 +172,8 @@ LiquidCrystal_I2C lcd(0x5f);
 
 const byte leftPin =  A2;          // connect left paddle to pin A2
 const byte rightPin = A0;         // and right one to Pin A0
-//const byte sidetonePin = 9;      // to generate an ugly keyer side tone.
-const byte sidetonePin = 10;      // pin 10 if pin 9 has been destroyed by the speaker
+const byte sidetonePin = 9;      // to generate an ugly keyer side tone.
+//const byte sidetonePin = 10;      // pin 10 if pin 9 has been destroyed by the speaker
 const byte modeButtonPin = 4;    // input pin for mode button
 // this keys the transmitter /through a 2N2222 NPN transistor - at the
 // same time lights up the LED on the Arduino
