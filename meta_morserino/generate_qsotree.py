@@ -51,17 +51,22 @@ def prob(probability, arg):
         ret.append(arg)
     return ret, mixHistoryMaxLength
 
-def esc(arg):
-    # ESC is only allowed to take 1 element!
-    ret = ["ESC_SPECIAL", 1, ]
+def esc(*args):
+    ret = ["ESC_SPECIAL", len(args), ]
     mixHistoryMaxLength = 0
-    if(isinstance(arg,list)):
-        ret += list(arg)
-    elif(isinstance(arg,tuple)):
-        ret += arg[0]
-        mixHistoryMaxLength += arg[1]
-    else:
-        ret.append(arg)
+    for arg in args:
+        if(isinstance(arg,list)):
+            raise ValueError("esc list may only include strings, not nested lists")
+            #ret += list(arg)
+        elif(isinstance(arg,tuple)):
+            raise ValueError("esc list may only include strings, not nested lists")
+            #ret += arg[0]
+            #mixHistoryMaxLength += arg[1]
+        elif(isinstance(arg,str)):
+            ret.append(arg)
+        else:
+            raise ValueError("esc list may only include strings, not nested lists")
+        #ret.append(arg)
     return ret, mixHistoryMaxLength
 
 def mix(*args):
@@ -79,7 +84,9 @@ def mix(*args):
 
 if(__name__ == "__main__"):
     call1 = esc("CALL1_MAGIC")
+    call1x2 = esc("CALL1_MAGIC", "CALL1_MAGIC")
     call2 = esc("CALL2_MAGIC")
+    call2x2 = esc("CALL2_MAGIC", "CALL2_MAGIC")
     de = 50
     r = 174
     es = 58
@@ -128,9 +135,9 @@ if(__name__ == "__main__"):
         alt(
             #regular qso
             seq(
-                seq(cq, cq, de, call1, call1, alt(seq(pse, k,),ar )),# cq cq
+                seq(cq, cq, de, call1x2, alt(seq(pse, k,),ar )),# cq cq
                 pause,
-                seq(call1, de, call2, call2,
+                seq(call1, de, call2x2,
                     prob(0.1, seq(pse, alt(170,155,156,158))),# qsy qro qrp qrs
                     alt(seq(pse, k), esc('KN_IDX'))),
                 pause,
@@ -199,11 +206,11 @@ if(__name__ == "__main__"):
                         ),
                         seq(my,238,_is,group5,repeat,stop,),
                         # my name is
-                        seq(my,172,_is,esc("NAME2_MAGIC"),esc("NAME2_MAGIC"),stop,),
+                        seq(my,172,_is,esc("NAME2_MAGIC","NAME2_MAGIC"),stop,),
                         # my qth is
-                        seq(my,239,_is,esc("DOK_MAGIC"),repeat,stop,),
+                        seq(my,239,_is,esc("DOK_MAGIC", "REPEAT_MAGIC"),stop,),
                         # my dok is
-                        prob(0.10,seq(esc("AS_IDX"), pause, pause,)),
+                        prob(0.10,seq(esc("AS_IDX", "PAUSE_MAGIC", "PAUSE_MAGIC"),)),
                         # make <as> a second break
                     ),
                     mix(
@@ -219,7 +226,7 @@ if(__name__ == "__main__"):
                                 prob(0.5,143), #pep
                                 alt(147,es,stop),19,group5,stop #ant
                             ))),
-                        seq(233,hr,alt(seq(group5, group5), 49, 30, 111), #wx sunny cldy rain
+                        seq(233,hr,alt(esc("GROUPOF5_MAGIC","GROUPOF5_MAGIC"), 49, 30, 111), #wx sunny cldy rain
                             200, esc("NUM2_MAGIC"), c, stop, #temp
                         ),
                     ),
@@ -228,14 +235,14 @@ if(__name__ == "__main__"):
                 ),
                 pause,
                 ### kurze wechsel
-                prob(0.1, seq(pse, ur, 19, 14, esc('QUESTION_IDX'),esc('BK_IDX'),#ant agn?
+                prob(0.1, seq(pse, ur, 19, 14, esc('QUESTION_IDX','BK_IDX'),#ant agn?
                               pause,
                               92, 88, antenna, repeat, hr, esc('BK_IDX'), #i 88
                               pause,
                 )),
-                prob(0.1, seq(236, 91, ur, 13, esc('QUESTION_IDX'),esc('BK_IDX'),#what is ur age ?
+                prob(0.1, seq(236, 91, ur, 13, esc('QUESTION_IDX','BK_IDX'),#what is ur age ?
                               pause,
-                              13, hr, 91, esc('NUM2_MAGIC'), repeat, esc('BK_IDX'), #age hr is
+                              13, hr, 91, esc('NUM2_MAGIC', "REPEAT_MAGIC",'BK_IDX'), #age hr is
                               pause,
                 )),
                 ### 3. durchgang
@@ -260,7 +267,7 @@ if(__name__ == "__main__"):
                                 prob(0.5,143), #pep
                             alt(227,es,stop),19,antenna,stop #ant
                         ))),
-                        seq(233, hr, alt(seq(group5, group5), 49, 30, 111), es, #wx sunny cldy rain
+                        seq(233, hr, alt(esc("GROUPOF5_MAGIC", "GROUPOF5_MAGIC"), 49, 30, 111), es, #wx sunny cldy rain
                             200, esc("NUM2_MAGIC"), c, stop, #temp
                         ),
                         seq(33,88,alt(228,86), #btw hv wkd hrd
@@ -343,18 +350,18 @@ if(__name__ == "__main__"):
             ###### SOTA qso
             seq(
                 #activator calls
-                seq(cq, 216, cq, 216, de, call1, call1, #cq sota cq sota de call1
-                    114, esc("SOTA_MAGIC"), repeat, alt(seq(pse, k), ar)), #on
+                seq(cq, 216, cq, 216, de, call1x2, #cq sota cq sota de call1
+                    114, esc("SOTA_MAGIC", "REPEAT_MAGIC"), alt(seq(pse, k), ar)), #on
                 pause,
                 #chaser calls activator
-                seq(call1, de, call2, call2,
+                seq(call1, de, call2x2,
                     prob(0.1, seq(pse, alt(170,155,156,158))),# qsy qro qrp qrs
                     alt(seq(pse, k), esc('KN_IDX'))),
                 pause,
                 # caser replies with report
                 seq(call2, prob(0.5,seq(ur, prob(0.2,188))), 183,
                     # ur sigs rst
-                    esc("RST_MAGIC"), repeat, repeat,
+                    esc("RST_MAGIC", "REPEAT_MAGIC", "REPEAT_MAGIC"),
                     de, call1, pse, k),
                 pause,
                 #chaser confirms
@@ -362,7 +369,7 @@ if(__name__ == "__main__"):
                         135), repeat, #ok
                     call2, prob(0.5,seq(ur, prob(0.2,188))), 183,
                     # ur sigs rst
-                    esc("RST_MAGIC"), repeat,
+                    esc("RST_MAGIC","REPEAT_MAGIC"),
                     de, call2, pse, k),
                 pause,
                 #activator acknowledges rprt and signs off
@@ -392,15 +399,15 @@ if(__name__ == "__main__"):
             ),
             ####### contest qso
             seq(prob(0.5, cq), 201, call1, call1, k, #test
+                esc("PAUSE_MAGIC",
+                    "CALL2_MAGIC"), k,
+                esc("PAUSE_MAGIC",
+                    "CALL2_MAGIC","RST_MAGIC", "NUM3_MAGIC"), k,
                 pause,
-                call2, k,
-                pause,
-                call2, esc("RST_MAGIC"), esc("NUM3_MAGIC"), k,
-                pause,
-                r, prob(0.5, ur), esc("RST_MAGIC"), esc("NUM3_MAGIC"), k,
+                r, prob(0.5, ur), esc("RST_MAGIC", "NUM3_MAGIC"), k,
                 pause,
                 alt(203, 204,206), #tnx, tks, tu
-                201, call1, call1 #test
+                201, call1x2 #test
                 )
         ),
     )
