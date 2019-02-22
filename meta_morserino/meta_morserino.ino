@@ -1,3 +1,19 @@
+
+
+//#define ENABLE_MEMO_KEYER
+
+#define ENABLE_QSOTEXT_GENERATOR
+// uncomment to simulate mistakes in QSOTEXT generator
+#define SIMULATE_MISTAKES
+
+// display buffer for bottom display line, one extra element for a \0.
+// NOTE: this is the place to consume as much SRAM as available,
+// to allow for a long scrolling.
+#define TEXT_BUFFER_LENGTH (LCD_COLUMNS*15 + 1)
+
+
+////////////////////////////////////////////////////////////////////////
+
 #define metaVERSION "6.0"
 
 /*
@@ -10,21 +26,14 @@
  */
 const byte MorserSignature = '.';
 
-
 // uncomment to enable serial debbugging communication
 //#define DEBUG
 
-
-//#define ENABLE_MEMO_KEYER
 
 #ifdef ENABLE_MEMO_KEYER
 //The macro E2END is the last EEPROM address.
 #define MAX_MEMO_TEXT_LENGTH (E2END-sizeof(byte)-sizeof(CWs)-2)
 #endif
-
-#define ENABLE_QSOTEXT_GENERATOR
-// uncomment to simulate mistakes in QSOTEXT generator
-#define SIMULATE_MISTAKES
 
 //#define USB_KEYBOARD_OUTPUT
 #ifdef USB_KEYBOARD_OUTPUT
@@ -252,11 +261,6 @@ enum __attribute__ ((__packed__)) morserinoMode {morseKeyer=0,
     morseBacklight,
     numMorserinoModes};
 morserinoMode morseState = morseKeyer;
-
-// display buffer for bottom display line, one extra element for a \0.
-// NOTE: this is the place to consume as much SRAM as available,
-// to allow for a long scrolling.
-#define TEXT_BUFFER_LENGTH (LCD_COLUMNS*15 + 1)
 
 
 // scroll length is 1 less, because of the \0 marker
