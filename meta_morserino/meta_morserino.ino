@@ -11,6 +11,15 @@
 // to allow for a long scrolling.
 #define TEXT_BUFFER_LENGTH (LCD_COLUMNS*15 + 1)
 
+/* If I understand it correctly, the USB port on an Arduino Nano is
+   connected to a FTDI (or similar) USB to serial chip, instead of
+   directly to the ATMega328 (or ATMega168). You can't make the USB
+   anything else other than a serial port.  You could add a USB port
+   using 2 digital I/O pins and control it through the V-USB library,
+   but at this point it's probably a lot easier and less expensive
+   buying an Arduino Pro or Arduino Pro Micro or something else. */
+// NOTE that the keyboard code is untested.
+//#define ENABLE_USB_KEYBOARD_OUTPUT
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -35,16 +44,8 @@ const byte MorserSignature = '.';
 #define MAX_MEMO_TEXT_LENGTH (E2END-sizeof(byte)-sizeof(CWs)-2)
 #endif
 
-//#define USB_KEYBOARD_OUTPUT
-#ifdef USB_KEYBOARD_OUTPUT
+#ifdef ENABLE_USB_KEYBOARD_OUTPUT
 #include <Keyboard.h>
-/* If I understand it correctly, the USB port on an Arduino Nano is
-   connected to a FTDI (or similar) USB to serial chip, instead of
-   directly to the ATMega328 (or ATMega168). You can't make the USB
-   anything else other than a serial port.  You could add a USB port
-   using 2 digital I/O pins and control it through the V-USB library,
-   but at this point it's probably a lot easier and less expensive
-   buying a Pro Micro. */
 #endif
 
 // enable a generator which is helpful for debugging sigs: it will
@@ -1455,6 +1456,11 @@ void setup() {
   // only for debugging purposes! comment out for production code!
   Serial.begin(9600);
 #endif
+
+#ifdef ENABLE_USB_KEYBOARD_OUTPUT
+  Keyboard.begin();
+#endif
+
   textBuffer[0] = '\0';
 
   // read what is stored in EEPROM:
@@ -2910,6 +2916,30 @@ void pushChar (char c, boolean updateDisplay) {
   // and display the line
   if (updateDisplay)
     updateDisplayLine();
+
+#ifdef ENABLE_USB_KEYBOARD_OUTPUT
+  switch(c) {
+  case '\0':
+    return;
+  case AE_SYMB: c = 132;
+    break;
+  case OE_SYMB: c = 148;
+    break;
+  case UE_SYMB: c = 129;
+    break;
+  case UNKNOWN_SIG_SYMB:
+    // black block
+    /* c = (char) 219; */
+    /* // gray background */
+    /* c = (char) 177; */
+    c = '_';
+    break;
+  case SMILEY_SYMBOL1:
+  case SMILEY_SYMBOL2:
+    return;
+  }
+  Keyboard.print(c);
+#endif
 }
 
 void pushString (const char str[]) {
@@ -3324,43 +3354,6 @@ void fillSigString(byte sigidx){
   // the display.
   // For sigs consisting of a single character this is the inverse
   // to the A2IDX() macro.
-
-
-/* if (CWtree[treeptr].symb > (unsigned char) 32) { */
-  /*   sigString[0] = CWtree[treeptr].symb; */
-  /*   sigString[1] = (byte) 0; */
-  /* } */
-  /* else */
-  /*   switch (CWtree[treeptr].symb) { */
-  /*   case CH_SYMB: strcpy (sigString, "ch"); */
-  /*     break; */
-  /*   case AS_SYMB: strcpy (sigString, "<as>"); */
-  /*     break; */
-  /*   case KA_SYMB: strcpy (sigString, "<ka>"); */
-  /*     break; */
-  /*   case KN_SYMB: strcpy (sigString, "<kn>"); */
-  /*     break; */
-  /*   case SK_SYMB: strcpy (sigString, "<sk>"); */
-  /*     break; */
-  /*   case HH_SYMB: strcpy (sigString, "<hh>"); */
-  /*     break; */
-  /*   case BK_SYMB: strcpy (sigString, "<bk>"); */
-  /*     break; */
-  /*   case AR_SYMB: strcpy (sigString, "<ar>"); */
-  /*     // this never happens, it will be output as '+' */
-  /*     break; */
-  /*   case SN_SYMB: strcpy (sigString, "<ve>"); */
-  /*     break; */
-  /*   case BT_SYMB: strcpy (sigString, "<bt>"); */
-  /*     // this never happens, it will be output as '=' */
-  /*     break; */
-  /*   case KK_SYMB: strcpy (sigString, "<kk>"); */
-  /*     break; */
-  /*   default: */
-  /*     // this should never occur! */
-  /*     strcpy (sigString, "*"); */
-  /*   } */
-  /* return; */
 
   // this terminates the string for all single characters
   sigString[1] = 0;
