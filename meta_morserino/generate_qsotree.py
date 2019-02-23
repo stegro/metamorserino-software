@@ -204,7 +204,7 @@ if(__name__ == "__main__"):
                     alt(r, 60, esc("VE_IDX"), # r fb <ve>
                         seq(prob(0.5, 12), 135) #all ok
                     ),
-                    dr, op, es,
+                    dr, op, esc("NAME1_MAGIC"), es,
                     prob(0.5,alt(224,121,)), alt(203, 204,), fer,
                     # vy mni tks tnx fr fer
                     alt(182,182,95,123),stop,#rpt rprt info msg
@@ -241,7 +241,7 @@ if(__name__ == "__main__"):
                                          seq(esc("NUM1_MAGIC"), 102),#kw
                                 ),
                                 prob(0.5,143), #pep
-                                alt(147,es,stop),19,group5,stop #ant
+                                alt(227,es,stop),19,group5,stop #ant
                             )),
                         ),
                         seq(233,hr,alt(esc("GROUPOF5_MAGIC","GROUPOF5_MAGIC"), 49, 30, 111, 198, 231, 60, 210), #wx sunny cldy rain warm snow fb ufb
@@ -253,21 +253,21 @@ if(__name__ == "__main__"):
                 ),
                 pause,
                 ### kurze wechsel
-                prob(0.1, seq(pse, ur, 19, 14, esc('QUESTION_IDX','BK_IDX'),#ant agn?
-                              pause,
-                              88, antenna, repeat, hr, esc('BK_IDX'), #hv
-                              pause,
+                prob(0.1, seq(pse, ur, 19, 14, esc('QUESTION_IDX','BK_IDX',#ant agn?
+                "PAUSE_MAGIC",),
+                              88, antenna, repeat, hr, esc('BK_IDX', #hv
+                              "PAUSE_MAGIC",)
                 )),
-                prob(0.1, seq(pse, ur, 238, 14, esc('QUESTION_IDX','BK_IDX'),#name agn?
-                              pause,
-                              esc("NAME2_MAGIC", "REPEAT_MAGIC"), esc('BK_IDX'),
-                              pause,
+                prob(0.1, seq(pse, ur, 238, 14, esc('QUESTION_IDX','BK_IDX', #name agn?
+                                                    "PAUSE_MAGIC",
+                              "NAME2_MAGIC", "REPEAT_MAGIC",'BK_IDX',
+                                                    "PAUSE_MAGIC"),
                               alt(224,121,),esc("NAME2_MAGIC")
                 )),
-                prob(0.1, seq(236, 91, ur, 13, esc('QUESTION_IDX','BK_IDX'),#what is ur age ?
-                              pause,
-                              13, hr, 91, esc('NUM2_MAGIC', "REPEAT_MAGIC",'BK_IDX'), #age hr is
-                              pause,
+                prob(0.1, seq(236, 91, ur, 13, esc('QUESTION_IDX','BK_IDX',#what is ur age ?
+                                                   "PAUSE_MAGIC",),
+                              13, hr, 91, esc('NUM2_MAGIC', "REPEAT_MAGIC",'BK_IDX', #age hr is
+                                              "PAUSE_MAGIC"),
                 )),
                 ### 3. durchgang
                 seq(
