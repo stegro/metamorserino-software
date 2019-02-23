@@ -815,7 +815,7 @@ const char abbrev86[] PROGMEM =  "hrd";
 const char abbrev87[] PROGMEM =  "hrs";
 const char abbrev88[] PROGMEM =  "hv";
 const char abbrev89[] PROGMEM =  "hvy";
-const char abbrev90[] PROGMEM =  "hw?";
+const char abbrev90[] PROGMEM =  "hw";
 const char abbrev91[] PROGMEM =  "is";
 const char abbrev92[] PROGMEM =  "g5rv";
 const char abbrev93[] PROGMEM =  "in";
@@ -966,9 +966,12 @@ const char abbrev237[] PROGMEM =  "yl";
 const char abbrev238[] PROGMEM =  "name";
 const char abbrev239[] PROGMEM =  "dok";
 const char abbrev240[] PROGMEM =  "locator";
+const char abbrev241[] PROGMEM =  "yday";
+const char abbrev242[] PROGMEM =  "plus";
+const char abbrev243[] PROGMEM =  "also";
 
 
-const byte NUMBER_OF_ABBREVS = 241;
+const byte NUMBER_OF_ABBREVS = 244;
 //// these are used in the qsotree:
 //liste of elements that is to be worked in order.
 #define LIST_SEQ (NUMBER_OF_ABBREVS)
@@ -1026,7 +1029,8 @@ PGM_P const abbreviations[NUMBER_OF_ABBREVS] PROGMEM = {
   abbrev201, abbrev202, abbrev203, abbrev204, abbrev205, abbrev206, abbrev207, abbrev208, abbrev209, abbrev210,
   abbrev211, abbrev212, abbrev213, abbrev214, abbrev215, abbrev216, abbrev217, abbrev218, abbrev219, abbrev220,
   abbrev221, abbrev222, abbrev223, abbrev224, abbrev225, abbrev226, abbrev227, abbrev228, abbrev229, abbrev230,
-  abbrev231, abbrev232, abbrev233, abbrev234, abbrev235, abbrev236, abbrev237, abbrev238, abbrev239,
+  abbrev231, abbrev232, abbrev233, abbrev234, abbrev235, abbrev236, abbrev237, abbrev238, abbrev239, abbrev240,
+  abbrev241, abbrev242, abbrev243
 };
 
 //Teaching order of the signs:
@@ -1655,11 +1659,8 @@ void setup() {
     lcd.noBacklight();
 
   // display startup screen
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(F("MetaMorserino"));
-  lcd.setCursor(0, 1);
-  lcd.print(F("V " metaVERSION "  (oe1wkl)"));
+  clearAndPrintScreen(F("MetaMorserino"),
+                      F("V " metaVERSION "  (oe1wkl)"));
   delay(1200);
   lcd.clear();
 
@@ -1680,12 +1681,8 @@ void setupTrainerMode() {
   // erase the textBuffer
   pushChar('\0', false);
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(F("Start CW Trainer"));
-  lcd.setCursor(0, 1);
-  lcd.print(F("on/off: Squeeze"));
-
+  clearAndPrintScreen(F("Start CW Trainer"),
+                      F("on/off: Squeeze"));
   active = false;
 
   reCalcSpeedSetting();
@@ -3117,11 +3114,8 @@ void enterOwnSigsForGenerator(){
   if(morseState == morseTrainer &&
      encoderState == scrollMode &&
      generatorMode == CHOICE) {
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print(F("qrv pse k = qru"));
-    lcd.setCursor(0,1);
-    lcd.print(F("wid unknown sig"));
+    clearAndPrintScreen(F("qrv pse k = qru"),
+                        F("wid unknown sig"));
 
     clearCounters();
 
@@ -3829,11 +3823,8 @@ void topMenu() {
       if (modeButton.clicks == 2) {
         // a double click in top menu means we toggle keyer output on/off
         keyTrainerMode = !keyTrainerMode;
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print(F("Key CW Trainer:"));
-        lcd.setCursor(0,1);
-        lcd.print( keyTrainerMode ? F("On") : F("Off") );
+        clearAndPrintScreen(F("Key CW Trainer:"),
+                            keyTrainerMode ? F("On") : F("Off"));
         delay(1500);
         lcd.clear();
         printTopMenu(morseState);
@@ -3842,11 +3833,8 @@ void topMenu() {
       else if (modeButton.clicks == 3) {
         // a triple click in top menu means we toggle ACS on/off
         CWsettings.ACS = !CWsettings.ACS;
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print(F("Auto Char Space:"));
-        lcd.setCursor(0,1);
-        lcd.print( CWsettings.ACS ? F("On") : F("Off") );
+        clearAndPrintScreen(F("Auto Char Space:"),
+                            CWsettings.ACS ? F("On") : F("Off"));
         saveConfig();
         delay(1500);
         lcd.clear();
@@ -4319,4 +4307,13 @@ void fullScreenMsg(const __FlashStringHelper* msg){
   lcd.print(msg);
   delay(1500);
   lcd.clear();
+}
+
+void clearAndPrintScreen(const __FlashStringHelper* topmsg,
+                         const __FlashStringHelper* bottommsg){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(topmsg);
+  lcd.setCursor(0, 1);
+  lcd.print(bottommsg);
 }

@@ -113,7 +113,7 @@ if(__name__ == "__main__"):
     abt = prob(0.2,9)
     cq = 43
 
-    antenna = alt(
+    antenna = seq(alt(
         113, #lw
         77, #gp
         15, #dipole
@@ -123,11 +123,12 @@ if(__name__ == "__main__"):
         98, #zepp
         92, #g5rv
         82, #w3dzz
+        109, #log
         seq(prob(0.3,108),219), #vert
         group5,
         seq(esc("NUM1_MAGIC"),59), #123 el
         seq(esc("NUM2_MAGIC"),124), #123 mtr
-    )
+    ), prob(0.2, seq(214, esc("NUM2_MAGIC"),124))) #up 123 mtr
 
     sota_chaser_says_bye =seq(alt(203, 204,206), #tnx, tks, tu
                         prob(0.5, seq(3, de,)),#73 de
@@ -169,12 +170,12 @@ if(__name__ == "__main__"):
                         seq(prob(0.5,seq(ur, prob(0.2,188))), 183,
                             # ur sigs rst
                             esc("RST_MAGIC"), repeat,
-                            alt(60, 210,
-                                # fb ufb
+                            prob(0.3,alt(242,60, 210, # plus fb ufb
                                 seq(
                                     alt(153, 154, 164, 179, 26),repeat,#qrm qrn qsb rfi bci
-                                    prob(0.2,seq(40,224,28,))#conds vy bd
-                                )),stop,
+                                    #prob(0.2,seq(40,224,28,))#conds vy bd
+                                )))
+                            ,stop,
                         ),
                         # prob(0.1,seq(prob(0.2,seq(call1, 91, 81, 39, 195,stop)) #is ham cl stn
                         #              ,137, group5, repeat, stop, #op
@@ -191,7 +192,7 @@ if(__name__ == "__main__"):
                         prob(0.3,seq(my,240,_is,esc("LOCATOR_MAGIC", "REPEAT_MAGIC"),stop,)),
                         # my locator is
                     ),
-                    nw,90,ar,
+                    nw,90,esc("QUESTION_IDX"),ar,
                     # nw hw?
                     call2, de, call1,
                     pse, k,
@@ -212,9 +213,9 @@ if(__name__ == "__main__"):
                                 ur),
                             # ur sigs rst
                             esc("RST_MAGIC"), repeat,
-                            alt(60, 210, # fb ufb
+                            alt(242, 60, 210, # plus fb ufb
                                 seq(prob(0.1, 89),#hvy
-                                    alt(153, 154, 164,))),#qrm qrn qsb
+                                    alt(153, 154, 164, 179, 26))),#qrm qrn qsb rfi bci
                             stop,
                         ),
                         seq(my,238,_is,group5,repeat,stop,),
@@ -241,8 +242,9 @@ if(__name__ == "__main__"):
                                 ),
                                 prob(0.5,143), #pep
                                 alt(147,es,stop),19,group5,stop #ant
-                            ))),
-                        seq(233,hr,alt(esc("GROUPOF5_MAGIC","GROUPOF5_MAGIC"), 49, 30, 111, 198, 231), #wx sunny cldy rain warm snow
+                            )),
+                        ),
+                        seq(233,hr,alt(esc("GROUPOF5_MAGIC","GROUPOF5_MAGIC"), 49, 30, 111, 198, 231, 60, 210), #wx sunny cldy rain warm snow fb ufb
                             200, esc("NUM2_MAGIC"), c, stop, #temp
                         ),
                     ),
@@ -253,8 +255,14 @@ if(__name__ == "__main__"):
                 ### kurze wechsel
                 prob(0.1, seq(pse, ur, 19, 14, esc('QUESTION_IDX','BK_IDX'),#ant agn?
                               pause,
-                              92, 88, antenna, repeat, hr, esc('BK_IDX'), #i 88
+                              88, antenna, repeat, hr, esc('BK_IDX'), #hv
                               pause,
+                )),
+                prob(0.1, seq(pse, ur, 238, 14, esc('QUESTION_IDX','BK_IDX'),#name agn?
+                              pause,
+                              esc("NAME2_MAGIC", "REPEAT_MAGIC"), esc('BK_IDX'),
+                              pause,
+                              alt(224,121,),esc("NAME2_MAGIC")
                 )),
                 prob(0.1, seq(236, 91, ur, 13, esc('QUESTION_IDX','BK_IDX'),#what is ur age ?
                               pause,
@@ -271,7 +279,7 @@ if(__name__ == "__main__"):
                     alt(206, prob(0.5,alt(224,121,)), alt(203, 204,)), fer,
                     # tu / vy mni tks tnx fr fer
                     alt(182,95,123),stop,#rprt info msg
-                    prob(0.1,seq(224,146,comma,88,131,148,120,228,36)),#vy psed hv ur px not wkd b4
+                    prob(0.1,seq(224,146,comma,88,120,228,131,148,36)),#vy psed hv not wkd ur px b4
                     mix(
                         seq(hr, alt(180,205,235),group5,#(rig trx xcvr)
                                 prob(0.1, seq(227,alt(34,58,seq(56,103)))), # wid bug elbug (el ky)
@@ -288,13 +296,13 @@ if(__name__ == "__main__"):
                         ),
                         seq(33,88,alt(228,86), #btw hv wkd hrd
                             group5,
-                            prob(0.5,191), #sp
-                            36,#b4
+                            prob(0.5,alt(191,110)), #sp lp
+                            alt(36,241),#b4 yday
                             alt(132,151),#nr qrg
                             esc("NUM2_MAGIC"),118, stop #99 mhz
 
                         ),
-                        seq(227,213,alt(65,197),hr,238,group5,stop), #wid unlis frd name
+                        seq(227,alt(213,197),65,hr,238,esc("GROUPOF5_MAGIC","REPEAT_MAGIC"),stop), #wid unlis frd name
                     ),
                     nw, 160, stop,# qru
                     prob(0.1, seq(230,170,fer,189,prob(0.5,190),stop)),# wl qsy fer fr sked sn
@@ -325,10 +333,11 @@ if(__name__ == "__main__"):
                         seq(prob(0.5, 12), 135) #all ok
                     ),
                     dr, alt(op,esc("NAME1_MAGIC")), stop,
-                    prob(0.2, seq(42, fer, alt(# congrats fer
-                        seq(183, 227, 147),#rst wid pwr
+                    prob(0.1, seq(42, fer, alt(# congrats fer
+                        seq(60, 195), #fb stn
                         107,#lis
                     ))),
+                    prob(0.1,seq(160,243,stop)), #qru also
                     alt(seq(166, prob(0.5, 196), 221, buro, prob(0.5,135), stop),
                         #qsl (sure) via (buro bureau) (ok)
                         seq(131, 192, _pse, 59, #no sri pse excus
@@ -420,7 +429,14 @@ if(__name__ == "__main__"):
                 esc("PAUSE_MAGIC",
                     "CALL2_MAGIC","RST_MAGIC", "NUM3_MAGIC"), k,
                 pause,
-                r, prob(0.5, ur), esc("RST_MAGIC", "NUM3_MAGIC"), k,
+                prob(0.2, seq(133, 14, 145,#nr agn pse
+                              esc("PAUSE_MAGIC",
+                              "NUM3_MAGIC", "REPEAT_MAGIC"), k,)),
+                r, prob(0.5, ur), esc("RST_MAGIC", "NUM3_MAGIC"),
+                alt(k,
+                    seq(esc("REPEAT_MAGIC","QUESTION_IDX","BK_IDX",
+                            "PAUSE_MAGIC"),
+                        r,alt(70,r),esc("BK_IDX","PAUSE_MAGIC"))), # c
                 pause,
                 alt(203, 204,206), #tnx, tks, tu
                 201, call1x2 #test
@@ -448,7 +464,8 @@ if(__name__ == "__main__"):
                   # esc("SK_IDX"),
     )
 
-    toobig = [elem for elem in qso if isinstance(elem, int) and elem>= 241]
+    # check for elements larger than NUMBER_OF_ABBREVS
+    toobig = [elem for elem in qso if isinstance(elem, int) and elem>= 244]
     if (len(toobig) > 0):
         print(toobig)
         raise ValueError("There are values outside the abbrev index range.")
