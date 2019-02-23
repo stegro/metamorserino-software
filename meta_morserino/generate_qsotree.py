@@ -107,7 +107,7 @@ if(__name__ == "__main__"):
     ar = esc("AR_IDX")
     c = 70 # this is not numbered in order in the abbrevs
     buro = alt(35,29)
-    comma = 198
+    comma = esc("COMMA_IDX")
 
     fer = alt(61,64)
     abt = prob(0.2,9)
@@ -116,6 +116,13 @@ if(__name__ == "__main__"):
     antenna = alt(
         113, #lw
         77, #gp
+        15, #dipole
+        129, #magloop
+        17, #coil
+        105, #windom
+        98, #zepp
+        92, #g5rv
+        82, #w3dzz
         seq(prob(0.3,108),219), #vert
         group5,
         seq(esc("NUM1_MAGIC"),59), #123 el
@@ -126,10 +133,14 @@ if(__name__ == "__main__"):
                         prob(0.5, seq(3, de,)),#73 de
                         call2, esc("SK_IDX"))
 
+    #
+    #
+    # you are very welcome to improve this qso tree structure with
+    # better, useful and nice qso content examples!
+    #
     qso, mixHistoryMaxLength = seq(
-        prob(0.1, seq(152, pause, 152, pause)),
+        prob(0.2, seq(152, pause, 152, pause)),
         #qrl? qrl?
-        #FIXME alt(qrl,c) pause
 
         #contest, sota, or regular or...?
         alt(
@@ -177,7 +188,8 @@ if(__name__ == "__main__"):
                         # my qth is nr
                         seq(my,239,_is,esc("DOK_MAGIC"),repeat,stop,),
                         # my dok is
-                        # prob(0.1, seq(alt(40,41),r,80,stop)),#conds condx r gud
+                        prob(0.3,seq(my,240,_is,esc("LOCATOR_MAGIC", "REPEAT_MAGIC"),stop,)),
+                        # my locator is
                     ),
                     nw,90,ar,
                     # nw hw?
@@ -186,6 +198,7 @@ if(__name__ == "__main__"):
                 ),
                 pause,
                 ### 2. durchgang
+                prob(0.2, seq(alt(192,59), hr, 63, esc("AS_IDX", "PAUSE_MAGIC",))),#excus sri hr fone
                 seq(call1, de, call2, stop,
                     alt(r, 60, esc("VE_IDX"), # r fb <ve>
                         seq(prob(0.5, 12), 135) #all ok
@@ -212,6 +225,9 @@ if(__name__ == "__main__"):
                         # my dok is
                         prob(0.10,seq(esc("AS_IDX", "PAUSE_MAGIC", "PAUSE_MAGIC"),)),
                         # make <as> a second break
+                        prob(0.3,seq(my,240,_is,esc("LOCATOR_MAGIC", "REPEAT_MAGIC"),stop,)),
+                        # my locator is
+
                     ),
                     mix(
                         seq(hr, alt(
@@ -226,11 +242,11 @@ if(__name__ == "__main__"):
                                 prob(0.5,143), #pep
                                 alt(147,es,stop),19,group5,stop #ant
                             ))),
-                        seq(233,hr,alt(esc("GROUPOF5_MAGIC","GROUPOF5_MAGIC"), 49, 30, 111), #wx sunny cldy rain
+                        seq(233,hr,alt(esc("GROUPOF5_MAGIC","GROUPOF5_MAGIC"), 49, 30, 111, 198, 231), #wx sunny cldy rain warm snow
                             200, esc("NUM2_MAGIC"), c, stop, #temp
                         ),
                     ),
-                    84, 135, 231, ar, #hpe ok ?
+                    84, 135, esc("QUESTION_IDX"), ar, #hpe ok ?
                     call1, de, call2, pse, k,
                 ),
                 pause,
@@ -267,7 +283,7 @@ if(__name__ == "__main__"):
                                 prob(0.5,143), #pep
                             alt(227,es,stop),19,antenna,stop #ant
                         ))),
-                        seq(233, hr, alt(esc("GROUPOF5_MAGIC", "GROUPOF5_MAGIC"), 49, 30, 111), es, #wx sunny cldy rain
+                        seq(233, hr, alt(esc("GROUPOF5_MAGIC", "GROUPOF5_MAGIC"), 49, 30, 111, 198, 231), es, #wx sunny cldy rain warm snow
                             200, esc("NUM2_MAGIC"), c, stop, #temp
                         ),
                         seq(33,88,alt(228,86), #btw hv wkd hrd
@@ -432,7 +448,7 @@ if(__name__ == "__main__"):
                   # esc("SK_IDX"),
     )
 
-    toobig = [elem for elem in qso if isinstance(elem, int) and elem>239]
+    toobig = [elem for elem in qso if isinstance(elem, int) and elem>= 241]
     if (len(toobig) > 0):
         print(toobig)
         raise ValueError("There are values outside the abbrev index range.")
