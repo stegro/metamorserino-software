@@ -1466,6 +1466,8 @@ void setup() {
   Keyboard.begin();
 #endif
 
+  randomSeed(analogRead(leftPin));
+
   textBuffer[0] = '\0';
 
   // read what is stored in EEPROM:
@@ -1648,9 +1650,6 @@ void setup() {
   }
 
   // further initialisations
-  long int seed = (analogRead(A1) % 17) * (analogRead(A1) % 23) *
-    (millis() % 997);
-  randomSeed(seed);
   encoderDelta = 0;
 
   if (CWsettings.backlightOn)
@@ -3883,6 +3882,10 @@ void topMenu() {
           // this catches the others, just to make the compiler silent
           break;
         }
+
+        // use this interction to seed the random generator
+        randomSeed(millis());
+
         // we got a click, so leave the Menu
         return;
       }
