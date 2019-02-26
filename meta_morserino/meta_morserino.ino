@@ -1267,7 +1267,7 @@ uint16_t getListStart(uint16_t iqso){
     // surely not a valid answer in any other case, so use this.
     return iqso+1;
   }
-  for(uint16_t jqso = iqso-1; jqso >= 0; jqso--) {
+  for(int16_t jqso = iqso-1; jqso >= 0; jqso--) {
     jqso_byte = pgm_read_byte_near(&(qsotree[jqso]));
     if(isListStart(jqso_byte)) {
       // now check if iqso is still part of this list.
