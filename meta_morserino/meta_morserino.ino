@@ -1335,8 +1335,6 @@ uint16_t getListElemStartIndex(uint16_t list_start, uint16_t n){
 }
 
 void initNewQSO(){
-  randomSeed(millis());
-
   // clear the list where we note which mix elements have been printed
   // already.
   mixHistoryLength = 0;
@@ -1469,8 +1467,6 @@ void setup() {
   Keyboard.begin();
 #endif
 
-  randomSeed(analogRead(leftPin));
-
   textBuffer[0] = '\0';
 
   // read what is stored in EEPROM:
@@ -1551,6 +1547,7 @@ void setup() {
   // we use the eternal paddles
   pinMode(leftPin, INPUT_PULLUP);
   pinMode(rightPin, INPUT_PULLUP);
+  //randomSeed(analogRead(leftPin));
 
   // set up the encoder
   pinMode(PinCLK,INPUT_PULLUP);
@@ -2416,7 +2413,6 @@ void updateGeneratorMode() {
     // letters and do not contain prosigns or punctuation.
     startPool = bounds[BOUNDS_ALPHANUMERIC][0];
     endPool = bounds[BOUNDS_ALPHANUMERIC][1] + 1;
-    initNewQSO();
   }
 #endif
 #ifdef ENABLE_TEST_GENERATOR
@@ -2434,6 +2430,9 @@ void updateGeneratorMode() {
 }
 
 void prepNewGeneratorRun(boolean doStartSeq){
+  // use the user interaction to seed the random number generator
+  randomSeed(millis());
+
   // when the training group has been changed, begin with a start
   // sequence
   if(doStartSeq) {
@@ -2446,10 +2445,14 @@ void prepNewGeneratorRun(boolean doStartSeq){
   // generator will begin to spit out only signs of the current
   // level (not inkl older signs).
   clearCounters();
+#ifdef ENABLE_QSOTEXT_GENERATOR
+  if (generatorMode == QSOTEXT) initNewQSO();
+#endif
 
   // force new word when the next sig will be fetched..
   icurrent_sig = MAX_SIG_WORD_LENGTH;
   fetchNextSig();
+
 }
 
 // functions related to paddle actions.  paddle reads a capacitive
@@ -3878,9 +3881,6 @@ void topMenu() {
           // this catches the others, just to make the compiler silent
           break;
         }
-
-        // use this interction to seed the random generator
-        randomSeed(millis());
 
         // we got a click, so leave the Menu
         return;
