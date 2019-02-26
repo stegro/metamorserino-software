@@ -308,7 +308,8 @@ byte resultSnippetLength;
 // a small cross
 #define MISTAKE_SYMBOL ((char)B11101011)
 
-#define ARROW_SYMBOL ((char)126)
+#define ARROW_RIGHT_SYMBOL ((char)126)
+#define ARROW_LEFT_SYMBOL ((char)127)
 
 // japanese sign resembling a smiley
 #define SMILEY_SYMBOL1 ((char)B10101111)
@@ -1532,7 +1533,7 @@ void setup() {
     0b11000,
     0b11000
   };
-  for (byte i = 0; i < 8; i++) {
+  for (uint8_t i = 0; i < 8; i++) {
     if (i > 0)
       // remove horizontal lines from the Glyph, starting at the top
       volGlyph[i - 1] = 0;
@@ -2148,7 +2149,7 @@ void loop() {
 
         pushChar(' ',false);
         // arrow pointing right
-        pushChar(ARROW_SYMBOL, false);
+        pushChar(ARROW_RIGHT_SYMBOL, false);
 
         uint8_t correct_percent = (100*correctCount)/copyGame_keyedChars_without_blanks;
         sprintf(formatIntegerBuffer, "%2i", correct_percent);
@@ -2909,15 +2910,16 @@ void pushChar (char c, boolean updateDisplay) {
   // new characters
   scrollPosition = 0;
 
-  textBufferIndex = (textBufferIndex + 1) % TEXT_BUFFER_LENGTH;
+  textBufferIndex = textbufModulo(textBufferIndex + 1);
   textBuffer[textBufferIndex] = c;
-  textBuffer[(textBufferIndex+1) % TEXT_BUFFER_LENGTH] = '\0';
+  textBuffer[textbufModulo(textBufferIndex+1)] = '\0';
 
   // and display the line
   if (updateDisplay)
     updateDisplayLine();
 
 #ifdef ENABLE_USB_KEYBOARD_OUTPUT
+  // translate the lcd device symbol into ascii.
   switch(c) {
   case '\0':
     return;
@@ -2936,7 +2938,7 @@ void pushChar (char c, boolean updateDisplay) {
     break;
   case SMILEY_SYMBOL1:
   case SMILEY_SYMBOL2:
-  case ARROW_SYMBOL:
+  case ARROW_RIGHT_SYMBOL:
     return;
   }
   Keyboard.print(c);
@@ -2964,7 +2966,7 @@ void clearTopLine (boolean arrowsRight) {
   if (morseState != morseDecoder) {
     lcd.setCursor(0, 0);
     // put blanks in top line
-    for (byte i = 0; i < LCD_COLUMNS; i++)
+    for (uint8_t i = 0; i < LCD_COLUMNS; i++)
       lcd.print(' ');
     if (arrowsRight)
       //arrows on the right
@@ -2973,12 +2975,9 @@ void clearTopLine (boolean arrowsRight) {
       //arrows on the left
       lcd.setCursor(0, 0);
 
-    drawArrows();
+    lcd.print(ARROW_LEFT_SYMBOL);
+    lcd.print(ARROW_RIGHT_SYMBOL);
   }
-}
-void drawArrows () {
-  lcd.print((char)127);
-  lcd.print((char)126);
 }
 
 void displayTopLine() {
@@ -3209,7 +3208,7 @@ void fetchNextWord() {
   // put the letter right in the middle of the interval:
 #define DELTA ((KOCH_START_SEQ_INTERVAL-1)/2)
 
-      for(byte i = 0; i < KOCH_START_SEQ_INTERVAL; i++)
+      for(uint8_t i = 0; i < KOCH_START_SEQ_INTERVAL; i++)
         current_sig_word[i] = BLANK_IDX;
       current_sig_word[DELTA] = kochOrder[kochLevel*KOCH_SIGNS_PER_LEVEL+(k_startSeq-1)/KOCH_START_SEQ_N];
       current_sig_word[KOCH_START_SEQ_INTERVAL] = END_OF_WORD_IDX;
@@ -3335,7 +3334,7 @@ void fillCWElements(byte sigidx){
     // read it from Progmem into buffer first.
     sig_number_of_cw_elems = pgm_read_byte( &pool[sigidx][1]);
     bitmask = pgm_read_byte( &pool[sigidx][0]);
-    for (byte i=0; i<sig_number_of_cw_elems; ++i) {
+    for (uint8_t i=0; i<sig_number_of_cw_elems; ++i) {
       // get MSB and store it in array
       sig_cw_elems[i] = (bitmask & B10000000 ? 1 : 0 );
       // shift bitmask 1 bit to the left
@@ -3419,7 +3418,7 @@ void fillSigString(byte sigidx){
 }
 
 void generateGroupOf5() {
-  byte i;
+  uint8_t i;
   for(i = 0; i < getGroupOf5Length(); i++) {
     current_sig_word[i] = random(startPool, endPool);
   }
@@ -3435,7 +3434,7 @@ void generateOwnSigsGroupOf5() {
   if(n > 0) {
     // generate a group of 5 sigs from the sigs interactively chosen
     // by the user
-    byte i;
+    uint8_t i;
     for(i = 0; i< getGroupOf5Length(); i++) {
       current_sig_word[i] = qso_callsign1[random(n)];
     }
@@ -3469,7 +3468,7 @@ void generateQSOText() {
     //before starting a new qso, generate a number of blanks to have
     //some silence.
     initNewQSO();
-    byte i;
+    uint8_t i;
     for(i = 0; i < 8; i++) {
       current_sig_word[i] = BLANK_IDX;
     }
@@ -3613,7 +3612,6 @@ void evalQSOElem(int16_t iqso) {
     default:
       // this should never happen.
       // repeat the last one then, to make the user notice this bug.
-      current_sig_word[i++] = iqso_byte;
       break;
     }
   }else{
@@ -3622,17 +3620,8 @@ void evalQSOElem(int16_t iqso) {
     // buffer.
     for(i = 0; abbrev[i] != '\0'; i++) {
       switch(abbrev[i]){
-      case '=':
-        current_sig_word[i] = BT_IDX;
-        break;
       case '?':
         current_sig_word[i] = QUESTION_IDX;
-        break;
-      case '/':
-        current_sig_word[i] = SLASH_IDX;
-        break;
-      case '+':
-        current_sig_word[i] = AR_IDX;
         break;
       default:
         current_sig_word[i] = A2IDX(abbrev[i]);
@@ -3751,7 +3740,7 @@ void generateKoch(byte level) {
 
   byte length = morseState == morseQuickEcho ? 3 : random(3,7);
   byte rand;
-  for(byte i = 0; i < length; i++){
+  for(uint8_t i = 0; i < length; i++){
     rand = random(0, min(level, KOCH_MAX_PHASE + 1));
     if (rand < phase)
       //phase 0 -> no old signs
@@ -3778,7 +3767,7 @@ void generateTestAllSigns() {
 
   static byte sigidx = 0;
 #define TEST_GENERATOR_GROUPLENGTH 5
-  for(byte i = 0; i < TEST_GENERATOR_GROUPLENGTH; i++){
+  for(uint8_t i = 0; i < TEST_GENERATOR_GROUPLENGTH; i++){
     if (sigidx == NUMBER_OF_SIGNS_IN_POOL)
       sigidx = 0;
     else {
@@ -4233,13 +4222,13 @@ byte i2cScan() {
   // these are the two addresses, depending on the chip being used
   // (either 8574T or 8574AT)
 
-  for (byte address = 20; address < 96; address++ ) {
+  for (uint8_t address = 20; address < 96; address++ ) {
     // The i2c_scanner uses the return value of
     // the Write.endTransmission to see if
     // a device did acknowledge to the address.
     Wire.beginTransmission(address);
 
-    if (Wire.endTransmission() == 0) {
+    if (!Wire.endTransmission()) {
 #ifdef DEBUG
       /* Serial.print("I2C Device found on address (decimal): "); */
       /* Serial.println(address); */
