@@ -308,6 +308,8 @@ byte resultSnippetLength;
 // a small cross
 #define MISTAKE_SYMBOL ((char)B11101011)
 
+#define ARROW_SYMBOL ((char)126)
+
 // japanese sign resembling a smiley
 #define SMILEY_SYMBOL1 ((char)B10101111)
 #define SMILEY_SYMBOL2 ((char)B11000010)
@@ -2146,8 +2148,9 @@ void loop() {
 
         pushChar(' ',false);
         // arrow pointing right
-        pushChar((char)126, false);
-        byte correct_percent = (100*correctCount)/copyGame_keyedChars_without_blanks;
+        pushChar(ARROW_SYMBOL, false);
+
+        uint8_t correct_percent = (100*correctCount)/copyGame_keyedChars_without_blanks;
         sprintf(formatIntegerBuffer, "%2i", correct_percent);
         pushString(formatIntegerBuffer);
         pushChar('%', true);
@@ -2933,6 +2936,7 @@ void pushChar (char c, boolean updateDisplay) {
     break;
   case SMILEY_SYMBOL1:
   case SMILEY_SYMBOL2:
+  case ARROW_SYMBOL:
     return;
   }
   Keyboard.print(c);
