@@ -3372,6 +3372,8 @@ void fillSigString(byte sigidx){
       strcpy(sigString, "<kn>"); break;
     case SK_IDX:
       strcpy(sigString, "<sk>"); break;
+    case BK_IDX:
+      strcpy(sigString, "<bk>"); break;
     case HH_IDX:
       strcpy(sigString, "<hh>"); break;
       /* case AR_IDX: */
