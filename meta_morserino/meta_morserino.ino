@@ -2128,7 +2128,8 @@ void loop() {
         copyGame_keyedChars = trimKeyedChars(charCounter,
                                              copyGame_generatedChars);
         copyGame_keyedChars_without_blanks = 0;
-        for (uint16_t i = textBufferIndex; textBuffer[i] != '\0'; i = textbufModulo(i-1)) {
+        for (int16_t i = textBufferIndex; textBuffer[i] != '\0';
+             i = textbufModulo(i-1)) {
           copyGame_keyedChars_without_blanks += textBuffer[i] != ' ';
         }
 
