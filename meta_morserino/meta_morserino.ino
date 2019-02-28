@@ -3379,12 +3379,8 @@ void fillSigString(byte sigidx){
       strcpy(sigString, "<bk>"); break;
     case HH_IDX:
       strcpy(sigString, "<hh>"); break;
-      /* case AR_IDX: */
-      /*   strcpy(sigString, "<ar>"); break;*/
     case VE_IDX:
       strcpy(sigString, "<ve>"); break;
-      /* case BT_IDX: */
-      /*   strcpy(sigString, "<bt>"); break;*/
     case KK_IDX:
       strcpy(sigString, "<kk>"); break;
 #define AE_SYMB 225
@@ -3614,8 +3610,8 @@ void evalQSOElem(int16_t iqso) {
 #endif
       break;
     default:
-      // this should never happen.
-      // repeat the last one then, to make the user notice this bug.
+      // interpret the byte as a sigidx.
+      current_sig_word[i++] = iqso_byte;
       break;
     }
   }else{
