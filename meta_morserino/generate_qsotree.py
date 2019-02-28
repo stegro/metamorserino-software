@@ -105,7 +105,7 @@ if(__name__ == "__main__"):
     pause = esc("PAUSE_MAGIC")
     stop = esc("BT_IDX")
     ar = esc("AR_IDX")
-    c = 70 # this is not numbered in order in the abbrevs
+    c = 70
     buro = alt(35,29)
     comma = esc("COMMA_IDX")
 
@@ -169,7 +169,7 @@ if(__name__ == "__main__"):
                     mix(
                         seq(prob(0.5,seq(ur, prob(0.2,188))), 183,
                             # ur sigs rst
-                            esc("RST_MAGIC"), repeat,
+                            esc("RST_MAGIC", "REPEAT_MAGIC"),
                             prob(0.3,alt(242,60, 210, # plus fb ufb
                                 seq(
                                     alt(153, 154, 164, 179, 26),repeat,#qrm qrn qsb rfi bci
@@ -182,14 +182,14 @@ if(__name__ == "__main__"):
                         #              prob(0.5, seq(149, group5, repeat, stop)))), #qra
                         seq(my,238,_is, group5, repeat,stop,),
                         # my name is
-                        seq(my,172,_is, prob(0.3, 132), esc("NAME1_MAGIC"), esc("NAME1_MAGIC"),
+                        seq(my,172,_is, prob(0.3, 132), esc("NAME1_MAGIC","NAME1_MAGIC"),
                             prob(0.1, seq(prob(0.5,195), 137, group5)),#op
                             prob(0.1,seq(149, group5, group5, 195))#qra stn
                             ,stop,),
                         # my qth is nr
-                        seq(my,239,_is,esc("DOK_MAGIC"),repeat,stop,),
+                        seq(my,239,_is,esc("DOK_MAGIC", "REPEAT_MAGIC","BT_IDX"),),
                         # my dok is
-                        prob(0.3,seq(my,240,_is,esc("LOCATOR_MAGIC", "REPEAT_MAGIC"),stop,)),
+                        prob(0.3,seq(my,240,_is,esc("LOCATOR_MAGIC", "REPEAT_MAGIC", "BT_IDX"),)),
                         # my locator is
                     ),
                     nw,90,esc("QUESTION_IDX"),ar,
@@ -212,7 +212,7 @@ if(__name__ == "__main__"):
                         seq(alt(seq(prob(0.5,seq(ur, prob(0.2,188))), 183,),
                                 ur),
                             # ur sigs rst
-                            esc("RST_MAGIC"), repeat,
+                            esc("RST_MAGIC","REPEAT_MAGIC"),
                             alt(242, 60, 210, # plus fb ufb
                                 seq(prob(0.1, 89),#hvy
                                     alt(153, 154, 164, 179, 26))),#qrm qrn qsb rfi bci
@@ -220,13 +220,13 @@ if(__name__ == "__main__"):
                         ),
                         seq(my,238,_is,group5,repeat,stop,),
                         # my name is
-                        seq(my,172,_is,esc("NAME2_MAGIC","NAME2_MAGIC"),stop,),
+                        seq(my,172,_is,esc("NAME2_MAGIC","NAME2_MAGIC","BT_IDX"),),
                         # my qth is
-                        seq(my,239,_is,esc("DOK_MAGIC", "REPEAT_MAGIC"),stop,),
+                        seq(my,239,_is,esc("DOK_MAGIC", "REPEAT_MAGIC","BT_IDX"),),
                         # my dok is
                         prob(0.10,seq(esc("AS_IDX", "PAUSE_MAGIC", "PAUSE_MAGIC"),)),
                         # make <as> a second break
-                        prob(0.3,seq(my,240,_is,esc("LOCATOR_MAGIC", "REPEAT_MAGIC"),stop,)),
+                        prob(0.3,seq(my,240,_is,esc("LOCATOR_MAGIC", "REPEAT_MAGIC","BT_IDX"),)),
                         # my locator is
 
                     ),
@@ -241,7 +241,7 @@ if(__name__ == "__main__"):
                                          seq(esc("NUM1_MAGIC"), 102),#kw
                                 ),
                                 prob(0.5,143), #pep
-                                alt(227,es,stop),19,group5,stop #ant
+                                alt(227,es,stop),19,esc("GROUPOF5_MAGIC","BT_IDX") #ant
                             )),
                         ),
                         seq(233,hr,alt(esc("GROUPOF5_MAGIC","GROUPOF5_MAGIC"), 49, 30, 111, 198, 231, 60, 210), #wx sunny cldy rain warm snow fb ufb
@@ -271,7 +271,7 @@ if(__name__ == "__main__"):
                 )),
                 ### 3. durchgang
                 seq(
-                    call2, de, call1, stop,
+                    call2, de, esc("CALL1_MAGIC","BT_IDX"),
                     alt(r, 60,esc("VE_IDX"),# r fb
                         seq(prob(0.5, 12), 135) #all ok
                     ),
@@ -302,7 +302,7 @@ if(__name__ == "__main__"):
                             esc("NUM2_MAGIC"),118, stop #99 mhz
 
                         ),
-                        seq(227,alt(213,197),65,hr,238,esc("GROUPOF5_MAGIC","REPEAT_MAGIC"),stop), #wid unlis frd name
+                        seq(227,alt(213,197),65,hr,238,esc("GROUPOF5_MAGIC","REPEAT_MAGIC","BT_IDX")), #wid unlis frd name
                     ),
                     nw, 160, stop,# qru
                     prob(0.1, seq(230,170,fer,189,prob(0.5,190),stop)),# wl qsy fer fr sked sn
@@ -328,7 +328,7 @@ if(__name__ == "__main__"):
                 ),
                 pause,
                 ### 4. durchgang
-                seq(call1, de, call2, stop,
+                seq(call1, de, esc("CALL2_MAGIC","BT_IDX"),
                     alt(r, 60,esc("VE_IDX"),# r fb
                         seq(prob(0.5, 12), 135) #all ok
                     ),
@@ -444,24 +444,29 @@ if(__name__ == "__main__"):
         ),
     )
 
-    dbgqso, dbgMixHistoryMaxLength = seq(es,0,1,
-                  esc("CALL1_MAGIC"),
-                  esc("CALL2_MAGIC"),
-                  # esc("NAME1_MAGIC"),
-                  # esc("NAME2_MAGIC"),
-                  # esc("RANDCALL_MAGIC"),
-                  # esc("RANDCALL_MAGIC"),
-                  # esc("RST_MAGIC"),
-                  # esc("REPEAT_MAGIC"),
-                  # esc("PAUSE_MAGIC"),
-                  # esc("NUM1_MAGIC"),
-                  # esc("NUM2_MAGIC"),
-                  # esc("NUM3_MAGIC"),
-                  # esc("GROUPOF5_MAGIC"),
-                  # esc("LOCATOR_MAGIC"),
-                  # esc("DOK_MAGIC"),
-                  # esc("AS_IDX"),
-                  # esc("SK_IDX"),
+    dbgqso, dbgMixHistoryMaxLength = seq(
+        esc("PAUSE_MAGIC"),
+        es,0,1,
+        esc("CALL1_MAGIC",
+        "CALL2_MAGIC",
+        "BK_IDX",
+        "PAUSE_MAGIC",
+        "NAME1_MAGIC",
+        "NAME2_MAGIC",
+        "BK_IDX",
+        "RANDCALL_MAGIC",
+        "RANDCALL_MAGIC",
+        "RST_MAGIC",
+        "REPEAT_MAGIC",
+        "PAUSE_MAGIC",
+        "NUM1_MAGIC",
+        "NUM2_MAGIC",
+        "NUM3_MAGIC",
+        "GROUPOF5_MAGIC",
+        "LOCATOR_MAGIC",
+        "DOK_MAGIC"),
+        # esc("AS_IDX"),
+        # esc("SK_IDX"),
     )
 
     # check for elements larger than NUMBER_OF_ABBREVS
