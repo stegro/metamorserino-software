@@ -210,9 +210,9 @@ const byte PinDT=3; // Used for reading DT signal
 // it away.
 volatile char encoderDelta = 0;
 
-unsigned long signCounter;
-unsigned long signCounter_inclBlanks;
-unsigned long charCounter;
+uint16_t signCounter;
+uint16_t signCounter_inclBlanks;
+uint16_t charCounter;
 #define N_SIGNS_THEN_SAVE_CONFIG 30
 
 int refLeft, refRight;       //reference values to remove offset
@@ -286,10 +286,10 @@ const char keyer_modes[][3] = {"A ","B ","B+","Ul"};
 
 enum __attribute__ ((__packed__)) sec_mode {SEC_MODE_GENERATE=0, SEC_MODE_INPUT, SEC_MODE_PROCESS};
 sec_mode secondaryMode;
-uint8_t copyGame_keyedChars;
-uint8_t copyGame_generatedChars;
-uint8_t copyGame_keyedChars_without_blanks;
-uint8_t correctCount;
+uint16_t copyGame_keyedChars;
+uint16_t copyGame_generatedChars;
+uint16_t copyGame_keyedChars_without_blanks;
+uint16_t correctCount;
 boolean showMarks = true;
 boolean quickEcho_wordDone;
 boolean quickEcho_lastWordCorrect;
@@ -1756,7 +1756,7 @@ void showCopyGameResult(byte shift) {
   // 'c 'h' and get away with it.
   // however, this would lead to different number of signs in the end.
 
-  uint8_t i;
+  int8_t i;
   //actually display the generated text in the top line
   compareCopyGameResult(&i, shift, true);
 
@@ -1768,7 +1768,7 @@ void showCopyGameResult(byte shift) {
   }
 }
 
-uint8_t compareCopyGameResult(uint8_t* i, uint8_t tail_snippet_length, boolean printOnLCD) {
+uint8_t compareCopyGameResult(int8_t* i, uint8_t tail_snippet_length, boolean printOnLCD) {
   // this function does either of two closely related things:
   //  a) if printOnLCD==false, it compares the *complete* generated and
   //     keyed text and returns the number of correct signs
@@ -1783,7 +1783,7 @@ uint8_t compareCopyGameResult(uint8_t* i, uint8_t tail_snippet_length, boolean p
 
   char c_keyed, c_generated;
   int16_t j, ic_keyed, ic_generated;
-  uint16_t correctCount = 0;
+  int16_t correctCount = 0;
 
   *i = 0;
 
@@ -1847,8 +1847,7 @@ uint8_t compareCopyGameResult(uint8_t* i, uint8_t tail_snippet_length, boolean p
   return correctCount;
 }
 
-unsigned long trimKeyedChars(unsigned long charCount,
-                                 unsigned long genCharCount) {
+int16_t trimKeyedChars(int16_t charCount, int16_t genCharCount) {
   // The textBuffer looks like this:
   // \0.................\0...............
   //  |<- gencharCount ->| <-charCount->|
@@ -1861,36 +1860,33 @@ unsigned long trimKeyedChars(unsigned long charCount,
   // At the end of this method, the textbuffer should look like this:
   // \0abc defg hi jklm\0abc xxxx xx ijklmxx
 
-  uint16_t ic_keyed, ic_generated;
+  int16_t ic_keyed, ic_generated;
   char c_keyed, c_generated;
-  uint16_t sum;
-  sum = 0;
+  int16_t sum = 0;
 
   // start at leftmost position.
-  for(uint16_t i = 0; i < genCharCount; i++) {
+  for(int16_t i = 0; i < genCharCount; i++) {
 
-
-    ic_keyed = textBufferIndex - charCount + i + 1;
-    ic_generated = textBufferIndex - charCount - genCharCount + i;
     // get corresponding char
-    c_generated = textBuffer[textbufModulo(ic_generated)];
-    c_keyed = textBuffer[textbufModulo(ic_keyed)];
+    c_generated = textBuffer[textbufModulo(textBufferIndex - charCount - genCharCount + i)];
+    ic_keyed = textbufModulo(textBufferIndex - charCount + i + 1);
+    c_keyed = textBuffer[ic_keyed];
 
-    if(c_generated != ' '){
+    if(c_generated == ' '){
       if(c_keyed == ' '){
-        //delete this blank in the keyed chars, i.e. shift all
-        //following letters 1 position to the left, append a \0 at end
-        deleteCharAt(textBufferIndex, ic_keyed - textBufferIndex);
-        sum--;
-      }else{
         continue;
+      }else{
+        insertCharAt(' ', textbufModulo(textBufferIndex + sum), ic_keyed);
+        sum++;
       }
     }else{
       if(c_keyed == ' '){
-        continue;
+        //delete this blank in the keyed chars, i.e. shift all
+        //following letters 1 position to the left, append a \0 at end
+        deleteCharAt(textbufModulo(textBufferIndex + sum), ic_keyed);
+        sum--;
       }else{
-        insertCharAt(' ', textBufferIndex, ic_keyed - textBufferIndex);
-        sum++;
+        continue;
       }
     }
   }
@@ -1899,25 +1895,27 @@ unsigned long trimKeyedChars(unsigned long charCount,
   return charCount + sum;
 }
 
-void deleteCharAt (uint16_t textBufferIndex, int16_t delta) {
+void deleteCharAt (int16_t textBufferIndex, int16_t ic) {
 
-  for (; delta <= 0; delta ++) {
-    textBuffer[textbufModulo(textBufferIndex + delta)] = textBuffer[textbufModulo(textBufferIndex + delta + 1)];
+  for (; ic != textBufferIndex; ic = textbufModulo(ic+1)) {
+    textBuffer[ic] = textBuffer[textbufModulo(ic + 1)];
   }
 }
 
-void insertCharAt (char c, uint16_t textBufferIndex, int16_t delta) {
+void insertCharAt (char c, int16_t textBufferIndex, int16_t ic) {
 
-  textBuffer[textbufModulo(textBufferIndex + 2)] = '\0';
-
-  for (int16_t d = 0; d >= delta; d--) {
-    textBuffer[textbufModulo(textBufferIndex + d + 1)] = textBuffer[textbufModulo(textBufferIndex + d)];
+  // all the characters to the right of position ic must be shifted
+  // right by one position.
+  // this also shifts the \0 from textBufferIndex+1 to textBufferIndex+2.
+  for (int16_t d = textbufModulo(textBufferIndex+1); d != ic; d = textbufModulo(d - 1)) {
+    textBuffer[textbufModulo(d + 1)] = textBuffer[d];
   }
-  textBuffer[textbufModulo(textBufferIndex + delta)] = c;
+  textBuffer[textbufModulo(ic + 1)] = textBuffer[ic];
+  textBuffer[ic] = c;
 }
 
 #ifdef DEBUG
-void serialPrintTextBuffer(uint16_t textBufferIndex,
+void serialPrintTextBuffer(int16_t textBufferIndex,
                            int16_t deltastart, int16_t deltaend) {
   for (deltastart; deltastart <= deltaend; deltastart++) {
     Serial.print(textBuffer[textbufModulo(textBufferIndex + deltastart)] == '\0' ? '0' : textBuffer[textbufModulo(textBufferIndex + deltastart)]);
@@ -2140,7 +2138,7 @@ void loop() {
         delay(500);
         fullScreenMsg(F("r mni tnx"));
 
-        uint8_t i;
+        int8_t i;
         // do not display the previously generated text, but count
         // the number of correctly keyed signs
         correctCount = compareCopyGameResult(&i, 0, false);
@@ -2863,7 +2861,7 @@ void updateDisplayLine () {
   boolean isEmpty = false;
   // check, if there was a \0 already *before* the character that will
   // go into the rightmost lcd cell
-  uint16_t i;
+  int16_t i;
   for(i = scrollPosition; i>0; i--) {
     if(textBuffer[textbufModulo(textBufferIndex - scrollPosition + i)] == '\0') {
       printAnything = false;
@@ -3998,7 +3996,7 @@ boolean checkTone() {
     realstate = false;
     keyTx = false;
     // fill the buffer with samples
-    for (uint16_t i = 0; i < nBuf; i++)
+    for (int16_t i = 0; i < nBuf; i++)
       audioBuf[i] = analogRead(audioInPin);
 
     float Q0;
@@ -4006,7 +4004,7 @@ boolean checkTone() {
     float Q1 = 0;
     // the value of Q0 at the second to last timestep
     float Q2 = 0;
-    for (uint16_t i = 0; i < nBuf; i++) {
+    for (int16_t i = 0; i < nBuf; i++) {
       // for every sample, compute...
       Q0 = coeff * Q1 - Q2 + (float) audioBuf[i];
       Q2 = Q1;
@@ -4292,7 +4290,7 @@ byte getGroupOf5Length(){
   return morseState == morseQuickEcho ? 3 : 5;
 }
 
-uint16_t textbufModulo(uint16_t i){
+int16_t textbufModulo(int16_t i){
   return (i + TEXT_BUFFER_LENGTH) % TEXT_BUFFER_LENGTH;
 }
 
