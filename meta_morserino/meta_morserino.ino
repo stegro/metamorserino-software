@@ -1915,8 +1915,9 @@ void insertCharAt (char c, int16_t textBufferIndex, int16_t ic) {
 }
 
 #ifdef DEBUG
-void serialPrintTextBuffer(int16_t textBufferIndex,
-                           int16_t deltastart, int16_t deltaend) {
+void serialPrintTextBuffer() {
+  int16_t deltastart = -35;
+  int16_t deltaend = 10;
   for (deltastart; deltastart <= deltaend; deltastart++) {
     Serial.print(textBuffer[textbufModulo(textBufferIndex + deltastart)] == '\0' ? '0' : textBuffer[textbufModulo(textBufferIndex + deltastart)]);
   }
@@ -2157,9 +2158,9 @@ void loop() {
         if(correct_percent >= 90) {
           pushChar(' ', false);
           resultSnippetLength++;
-          const char ufb[] = "ufb! 77";
+          const char ufb[] = "ufb";
           pushString(ufb);
-          resultSnippetLength += 7;
+          resultSnippetLength += 3;
         }else if(correct_percent >= 70) {
           pushChar(' ', false);
           resultSnippetLength++;
@@ -3324,7 +3325,6 @@ void fetchNextSig() {
 }
 
 void fillCWElements(byte sigidx){
-  byte bitmask;
   if (sigidx >= BLANK_IDX)
     // space
     sig_number_of_cw_elems = 0;
@@ -3335,7 +3335,7 @@ void fillCWElements(byte sigidx){
     // look up the corresponding morse sign in our table,
     // read it from Progmem into buffer first.
     sig_number_of_cw_elems = pgm_read_byte( &pool[sigidx][1]);
-    bitmask = pgm_read_byte( &pool[sigidx][0]);
+    byte bitmask = pgm_read_byte( &pool[sigidx][0]);
     for (uint8_t i=0; i<sig_number_of_cw_elems; ++i) {
       // get MSB and store it in array
       sig_cw_elems[i] = (bitmask & B10000000 ? 1 : 0 );
