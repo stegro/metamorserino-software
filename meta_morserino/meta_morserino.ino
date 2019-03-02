@@ -1902,10 +1902,10 @@ int16_t trimKeyedChars(int16_t charCount, int16_t genCharCount) {
 }
 
 void deleteCharAt (int16_t textBufferIndex, int16_t ic) {
-
   for (; ic != textBufferIndex; ic = textbufModulo(ic+1)) {
     textBuffer[ic] = textBuffer[textbufModulo(ic + 1)];
   }
+  textBuffer[textbufModulo(ic + 1)] = '\0';
 }
 
 void insertCharAt (char c, int16_t textBufferIndex, int16_t ic) {
