@@ -1732,13 +1732,19 @@ void setupDecoderMode() {
 }
 
 void setupCopyGameMode() {
-  encoderState = scrollMode;
   reCalcSpeedSetting();
+
+  initNewCopyGameRound();
+  prepNewGeneratorRun(false);
+
+}
+void initNewCopyGameRound() {
+  encoderState = scrollMode;
 
   // erase the textBuffer
   pushChar('\0', false);
 
-  prepNewGeneratorRun(false);
+  clearCounters();
 
   secondaryMode = SEC_MODE_GENERATE;
   lcd.clear();
@@ -2196,7 +2202,7 @@ void loop() {
         // wait until paddles are released
         while (checkPaddles())
           ;
-        setupCopyGameMode();
+        initNewCopyGameRound();
       }
     }
     break;
