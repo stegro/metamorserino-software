@@ -21,6 +21,15 @@
 // NOTE that the keyboard code is untested.
 //#define ENABLE_USB_KEYBOARD_OUTPUT
 
+// no need to modify these two macros:
+#define KOCH_SIGN_ORDER_DJ4UF 1
+#define KOCH_SIGN_ORDER_LCWO 2
+
+// uncomment this or the other to have your preferred sign order for
+// Koch lectures
+#define KOCH_SIGN_ORDER KOCH_SIGN_ORDER_DJ4UF
+//#define KOCH_SIGN_ORDER KOCH_SIGN_ORDER_LCWO
+
 ////////////////////////////////////////////////////////////////////////
 
 #define metaVERSION "6.0"
@@ -1040,6 +1049,7 @@ PGM_P const abbreviations[NUMBER_OF_ABBREVS] PROGMEM = {
 const char kochOrder[] = {
   // This sign order is basically the same as DJ4UF uses for his
   // course and book.
+#if KOCH_SIGN_ORDER == KOCH_SIGN_ORDER_DJ4UF
   A2IDX('e'), A2IDX('s'), A2IDX('n'),
   A2IDX('o'), HH_IDX, A2IDX('t'),
   A2IDX('q'), A2IDX('5'), A2IDX('r'),
@@ -1049,15 +1059,37 @@ const char kochOrder[] = {
   A2IDX('i'), A2IDX('x'), A2IDX('4'),
   POINT_IDX,  A2IDX('m'), A2IDX('7'),
   A2IDX('y'), A2IDX('1'), SLASH_IDX,
-  A2IDX('h'), A2IDX('6'), A2IDX('m'),
-  A2IDX('7'), QUESTION_IDX, A2IDX('j'),
-  A2IDX('3'), A2IDX('g'), AS_IDX,
-  A2IDX('2'), A2IDX('v'), COMMA_IDX,
-  A2IDX('k'), A2IDX('z'), AR_IDX,
-  A2IDX('f'), A2IDX('b'), KN_IDX,
-  A2IDX('p'), A2IDX('w'), MINUS_IDX,
-  SK_IDX, VE_IDX, BK_IDX,
-  AT_IDX, KK_IDX, COLON_IDX
+  A2IDX('h'), A2IDX('6'), QUESTION_IDX,
+  A2IDX('j'), A2IDX('3'), A2IDX('g'),
+  AS_IDX, A2IDX('2'), A2IDX('v'),
+  COMMA_IDX, A2IDX('k'), A2IDX('z'),
+  AR_IDX, A2IDX('f'), A2IDX('b'),
+  KN_IDX, A2IDX('p'), A2IDX('w'),
+  MINUS_IDX, SK_IDX, VE_IDX,
+  BK_IDX, AT_IDX, KK_IDX,
+  COLON_IDX
+#elif KOCH_SIGN_ORDER == KOCH_SIGN_ORDER_LCWO
+  A2IDX('k'), A2IDX('m'), A2IDX('u'),
+  A2IDX('r'), A2IDX('e'), A2IDX('s'),
+  A2IDX('n'), A2IDX('a'), A2IDX('p'),
+  A2IDX('t'), A2IDX('l'), A2IDX('w'),
+  A2IDX('i'), POINT_IDX, A2IDX('j'),
+  A2IDX('z'), BT_IDX, A2IDX('f'),
+  A2IDX('o'), A2IDX('y'), COMMA_IDX,
+  A2IDX('v'), A2IDX('g'), A2IDX('5'),
+  SLASH_IDX, A2IDX('q'), A2IDX('9'),
+  A2IDX('2'), A2IDX('h'), A2IDX('3'),
+  A2IDX('8'), A2IDX('b'), QUESTION_IDX,
+  A2IDX('4'), A2IDX('7'), A2IDX('c'),
+  A2IDX('1'), A2IDX('d'), A2IDX('6'),
+  A2IDX('0'), A2IDX('x'), HH_IDX,
+  AR_IDX, KN_IDX, MINUS_IDX,
+  AS_IDX,SK_IDX, VE_IDX,
+  BK_IDX, AT_IDX, KK_IDX,
+  COLON_IDX,
+#else
+#error "the macro KOCH_SIGN_ORDER does not have a valid value."
+#endif
 };
 #define KOCH_ORDER_SIZE (18*3)
 // this does not have to be a divisor of KOCH_ORDER_SIZE:
