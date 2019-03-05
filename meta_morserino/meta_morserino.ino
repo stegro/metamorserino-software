@@ -24,11 +24,13 @@
 // no need to modify these two macros:
 #define KOCH_SIGN_ORDER_DJ4UF 1
 #define KOCH_SIGN_ORDER_LCWO 2
+#define KOCH_SIGN_ORDER_JUSTLEARNMORSECODE 3
 
 // uncomment this or the other to have your preferred sign order for
 // Koch lectures
 #define KOCH_SIGN_ORDER KOCH_SIGN_ORDER_DJ4UF
 //#define KOCH_SIGN_ORDER KOCH_SIGN_ORDER_LCWO
+//#define KOCH_SIGN_ORDER KOCH_SIGN_ORDER_JUSTLEARNMORSECODE
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -1086,12 +1088,31 @@ const char kochOrder[] = {
   AR_IDX, KN_IDX, MINUS_IDX,
   AS_IDX,SK_IDX, VE_IDX,
   BK_IDX, AT_IDX, KK_IDX,
-  COLON_IDX,
+  COLON_IDX
+#elif KOCH_SIGN_ORDER == KOCH_SIGN_ORDER_JUSTLEARNMORSECODE
+  A2IDX('k'), A2IDX('m'), A2IDX('r'),
+  A2IDX('s'), A2IDX('u'), A2IDX('a'),
+  A2IDX('p'), A2IDX('t'), A2IDX('l'),
+  A2IDX('o'), A2IDX('w'), A2IDX('i'),
+  POINT_IDX, A2IDX('n'), A2IDX('j'),
+  A2IDX('e'), A2IDX('f'), A2IDX('0'),
+  A2IDX('y'), A2IDX('v'), COMMA_IDX,
+  A2IDX('g'), A2IDX('5'), SLASH_IDX,
+  A2IDX('q'), A2IDX('9'), A2IDX('z'),
+  A2IDX('h'), A2IDX('3'), A2IDX('8'),
+  A2IDX('b'), QUESTION_IDX, A2IDX('4'),
+  A2IDX('2'), A2IDX('7'), A2IDX('c'),
+  A2IDX('1'), A2IDX('d'), A2IDX('6'),
+  A2IDX('x'), AT_IDX, BT_IDX,
+  SK_IDX, AR_IDX, HH_IDX,
+  KN_IDX, MINUS_IDX, AS_IDX,
+  VE_IDX, BK_IDX, KK_IDX,
+  COLON_IDX
 #else
 #error "the macro KOCH_SIGN_ORDER does not have a valid value."
 #endif
 };
-#define KOCH_ORDER_SIZE (18*3)
+#define KOCH_ORDER_SIZE (17*3+1)
 // this does not have to be a divisor of KOCH_ORDER_SIZE:
 #define KOCH_SIGNS_PER_LEVEL 3
 
